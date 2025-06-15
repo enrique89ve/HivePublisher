@@ -28,4 +28,6 @@ export * from './types.js';
 export { createPost, editPost, upvote } from './operations.js';
 // Account information retrieval
 export { getAccountInfo } from './accounts.js';
+// Content reading operations
+export { getPostContent, getComments } from './content.js';
 //# sourceMappingURL=index.js.map
