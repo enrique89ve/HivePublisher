@@ -92,30 +92,47 @@ export async function getAccountInfo(
       // Follow API might not be available
     }
 
-    // Get reputation data using bridge API
-    let bridgeReputation = null;
+    // Get reputation using proper API method
+    let reputationScore = null;
     try {
-      const bridgePayload = {
+      // Use the working condenser API method for reputation
+      const repPayload = {
         jsonrpc: '2.0',
-        method: 'bridge.get_account',
-        params: { account: username },
+        method: 'condenser_api.get_account_reputations',
+        params: [username, 1],
         id: 4
       };
 
-      const bridgeResponse = await fetch(apiNode, {
+      const repResponse = await fetch(apiNode, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(bridgePayload)
+        body: JSON.stringify(repPayload)
       });
 
-      if (bridgeResponse.ok) {
-        const bridgeResult = await bridgeResponse.json();
-        if (!bridgeResult.error && bridgeResult.result && bridgeResult.result.reputation) {
-          bridgeReputation = bridgeResult.result.reputation;
+      if (repResponse.ok) {
+        const repResult = await repResponse.json();
+        if (!repResult.error && repResult.result && repResult.result.length > 0) {
+          const accountRep = repResult.result[0];
+          if (accountRep.account === username && accountRep.reputation) {
+            // Convert the raw reputation value to the display format
+            const rawRep = parseInt(accountRep.reputation);
+            if (rawRep !== 0) {
+              const isNegative = rawRep < 0;
+              const absRep = Math.abs(rawRep);
+              let score = Math.log10(absRep);
+              score = Math.max(score - 9, 0) * 9 + 25;
+              
+              if (isNegative) {
+                score = 50 - score;
+              }
+              
+              reputationScore = Math.max(0, score).toFixed(2);
+            }
+          }
         }
       }
     } catch (error) {
-      // Bridge API might not be available
+      // Reputation API not available, will use default
     }
     
     // Get global properties for VESTS conversion
@@ -151,7 +168,7 @@ export async function getAccountInfo(
       total_posts: account.post_count?.toString() || '0',
       followers: followData.follower_count?.toString() || '0',
       followings: followData.following_count?.toString() || '0',
-      reputation: parseReputation(account.reputation || '0'),
+      reputation: reputationScore || parseReputation(account.reputation || '0'),
       incoming_vests: account.received_vesting_shares || '0.000000 VESTS',
       incoming_hp: convertVestsToHp(account.received_vesting_shares || '0.000000 VESTS', globalProps),
       outgoing_vests: account.delegated_vesting_shares || '0.000000 VESTS',
@@ -204,16 +221,25 @@ function parseJsonSafely(jsonString: string): any {
 
 /**
  * Parse Hive reputation from raw value using correct Hive algorithm
+ * Handles both raw blockchain values and formatted reputation scores
  */
 function parseReputation(rep: string | number): string {
-  let reputation = typeof rep === 'string' ? parseInt(rep) : rep;
+  if (rep === null || rep === undefined) return '25.00';
   
+  let reputation = typeof rep === 'string' ? parseFloat(rep) : rep;
+  
+  // If reputation is already formatted (between 0-100), return as is
+  if (reputation > 0 && reputation <= 100) {
+    return reputation.toFixed(2);
+  }
+  
+  // Handle raw blockchain reputation values
   if (reputation === 0) return '25.00';
   
   const isNegative = reputation < 0;
   reputation = Math.abs(reputation);
   
-  // Hive reputation formula: log10(reputation) - 9) * 9 + 25
+  // Standard Hive reputation formula
   let score = Math.log10(reputation);
   score = Math.max(score - 9, 0) * 9 + 25;
   
