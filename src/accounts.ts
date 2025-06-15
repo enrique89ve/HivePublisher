@@ -9,6 +9,20 @@ import { validateUsername } from './utils.js';
 
 /**
  * Get complete account information from Hive blockchain
+ * 
+ * @param username - Hive username to retrieve information for
+ * @param client - Optional HiveClient instance for custom configuration
+ * @returns Promise resolving to AccountInfo object or null if account not found
+ * 
+ * @example
+ * ```typescript
+ * const account = await getAccountInfo('alice');
+ * if (account) {
+ *   console.log(`Reputation: ${account.reputation}`);
+ *   console.log(`Posts: ${account.total_posts}`);
+ *   console.log(`Followers: ${account.followers}`);
+ * }
+ * ```
  */
 export async function getAccountInfo(
   username: string,
