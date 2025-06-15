@@ -90,7 +90,12 @@ async function demonstrateApiResolution() {
         const globalProps = await client.getDynamicGlobalProperties();
         console.log('✅ condenser_api.get_dynamic_global_properties: SUCCESS');
         const accountInfo = await getAccountInfo('mahdiyari');
-        console.log(`✅ Complex account info: Rep ${accountInfo.reputation}, Posts ${accountInfo.total_posts}`);
+        if (accountInfo) {
+            console.log(`✅ Complex account info: Rep ${accountInfo.reputation}, Posts ${accountInfo.total_posts}`);
+        }
+        else {
+            console.log('⚠️ Account info not found');
+        }
         console.log('\n🎯 Conclusión:');
         console.log('• HTTP client fixes implemented successfully');
         console.log('• Request headers and timeout handling improved');
