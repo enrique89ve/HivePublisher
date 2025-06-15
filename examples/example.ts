@@ -187,6 +187,36 @@ async function exampleErrorHandling() {
   }
 }
 
+// Example function to demonstrate getting account information
+async function exampleGetAccountInfo() {
+  console.log('📊 Getting account information...');
+  
+  try {
+    const accountInfo = await getAccountInfo('mahdiyari');
+    
+    if (accountInfo) {
+      console.log(`✅ Account found: @${accountInfo.name}`);
+      console.log(`📅 Created: ${accountInfo.created_at}`);
+      console.log(`👥 Followers: ${accountInfo.followers}`);
+      console.log(`📝 Total posts: ${accountInfo.total_posts}`);
+      console.log(`⭐ Reputation: ${accountInfo.reputation}`);
+      console.log(`💰 HIVE balance: ${accountInfo.reward_hive_balance}`);
+      
+      if (accountInfo.posting_metadata.profile) {
+        const profile = accountInfo.posting_metadata.profile;
+        console.log(`🏷️ Name: ${profile.name || 'Not set'}`);
+        console.log(`🌐 Website: ${profile.website || 'Not set'}`);
+        console.log(`📍 Location: ${profile.location || 'Not set'}`);
+      }
+    } else {
+      console.log('❌ Account not found');
+    }
+    
+  } catch (error) {
+    console.error(`❌ Failed to get account info: ${error instanceof Error ? error.message : 'Unknown error'}`);
+  }
+}
+
 // Main example runner
 async function runExamples() {
   console.log('🎯 HiveTS Library Examples\n');
@@ -199,6 +229,10 @@ async function runExamples() {
 
   // Run error handling example (safe to run without real credentials)
   await exampleErrorHandling();
+  console.log('');
+
+  // Test getting account information
+  await exampleGetAccountInfo();
   console.log('');
 
   // Test with real credentials if available

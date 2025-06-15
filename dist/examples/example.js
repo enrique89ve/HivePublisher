@@ -182,6 +182,9 @@ async function runExamples() {
     // Run error handling example (safe to run without real credentials)
     await exampleErrorHandling();
     console.log('');
+    // Test getting account information
+    await exampleGetAccountInfo();
+    console.log('');
     // Test with real credentials if available
     if (process.env.HIVE_USERNAME && process.env.HIVE_POSTING_KEY) {
         console.log('🔑 Real credentials detected. Testing with live Hive blockchain...\n');
