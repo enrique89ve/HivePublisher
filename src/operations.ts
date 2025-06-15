@@ -11,7 +11,7 @@ import {
   VoteResult,
   HiveError
 } from './types.js';
-import { parsePrivateKey, createHiveTransaction, signHiveTransaction } from './crypto.js';
+import { parsePrivateKey } from './crypto.js';
 import { generatePermlink, validateUsername, validateTags } from './utils.js';
 
 /**
@@ -99,24 +99,20 @@ export async function createPost(
     // Parse private key
     const privateKey = parsePrivateKey(credentials.postingKey);
 
-    // Get dynamic global properties for transaction reference
-    const props = await hiveClient.getDynamicGlobalProperties();
-    const refBlockNum = props.head_block_number & 0xFFFF;
-    const refBlockPrefix = parseInt(props.head_block_id.substring(8, 16), 16);
-    const expiration = new Date(Date.now() + 60000).toISOString().slice(0, -5);
+    // Dynamic import for ES module compatibility
+    const { Transaction } = await import('hive-tx');
+    
+    // Create and sign transaction using hive-tx Transaction class
+    const tx = new Transaction();
+    await tx.create([commentOperation]);
+    const signedTransaction = tx.sign(privateKey);
 
-    // Create and sign transaction using our lightweight implementation
-    const transaction = createHiveTransaction([commentOperation], {
-      ref_block_num: refBlockNum,
-      ref_block_prefix: refBlockPrefix,
-      expiration: expiration
-    });
-
-    const signedTransaction = signHiveTransaction(transaction, privateKey);
+    // Get transaction digest for ID
+    const { txId } = tx.digest();
 
     // Broadcast transaction
     const result = await hiveClient.broadcastTransaction(signedTransaction);
-    const transactionId = signedTransaction.transaction_id || result.id || result.tx_id;
+    const transactionId = txId || result.id || result.tx_id;
 
     return {
       success: true,
@@ -203,24 +199,20 @@ export async function editPost(
     // Parse private key
     const privateKey = parsePrivateKey(credentials.postingKey);
 
-    // Get dynamic global properties for transaction reference
-    const props = await hiveClient.getDynamicGlobalProperties();
-    const refBlockNum = props.head_block_number & 0xFFFF;
-    const refBlockPrefix = parseInt(props.head_block_id.substring(8, 16), 16);
-    const expiration = new Date(Date.now() + 60000).toISOString().slice(0, -5);
+    // Dynamic import for ES module compatibility
+    const { Transaction } = await import('hive-tx');
+    
+    // Create and sign transaction using hive-tx Transaction class
+    const tx = new Transaction();
+    await tx.create([editOperation]);
+    const signedTransaction = tx.sign(privateKey);
 
-    // Create and sign transaction using our lightweight implementation
-    const transaction = createHiveTransaction([editOperation], {
-      ref_block_num: refBlockNum,
-      ref_block_prefix: refBlockPrefix,
-      expiration: expiration
-    });
-
-    const signedTransaction = signHiveTransaction(transaction, privateKey);
+    // Get transaction digest for ID
+    const { txId } = tx.digest();
 
     // Broadcast transaction
     const result = await hiveClient.broadcastTransaction(signedTransaction);
-    const transactionId = signedTransaction.transaction_id || result.id || result.tx_id;
+    const transactionId = txId || result.id || result.tx_id;
 
     return {
       success: true,
@@ -315,24 +307,20 @@ export async function upvote(
     // Parse private key
     const privateKey = parsePrivateKey(credentials.postingKey);
 
-    // Get dynamic global properties for transaction reference
-    const props = await hiveClient.getDynamicGlobalProperties();
-    const refBlockNum = props.head_block_number & 0xFFFF;
-    const refBlockPrefix = parseInt(props.head_block_id.substring(8, 16), 16);
-    const expiration = new Date(Date.now() + 60000).toISOString().slice(0, -5);
+    // Dynamic import for ES module compatibility
+    const { Transaction } = await import('hive-tx');
+    
+    // Create and sign transaction using hive-tx Transaction class
+    const tx = new Transaction();
+    await tx.create([voteOperation]);
+    const signedTransaction = tx.sign(privateKey);
 
-    // Create and sign transaction using our lightweight implementation
-    const transaction = createHiveTransaction([voteOperation], {
-      ref_block_num: refBlockNum,
-      ref_block_prefix: refBlockPrefix,
-      expiration: expiration
-    });
-
-    const signedTransaction = signHiveTransaction(transaction, privateKey);
+    // Get transaction digest for ID
+    const { txId } = tx.digest();
 
     // Broadcast transaction
     const result = await hiveClient.broadcastTransaction(signedTransaction);
-    const transactionId = signedTransaction.transaction_id || result.id || result.tx_id;
+    const transactionId = txId || result.id || result.tx_id;
 
     return {
       success: true,
