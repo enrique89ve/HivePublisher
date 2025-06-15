@@ -164,19 +164,47 @@ function parsePrivateKey(privateKeyWif) {
     }
 }
 /**
- * Serialize transaction for signing (Hive format)
+ * Serialize transaction for signing (Hive binary format)
  */
 function serializeTransaction(transaction) {
-    // This is a simplified serialization - in production you'd need proper binary serialization
-    const serialized = {
-        ref_block_num: transaction.ref_block_num,
-        ref_block_prefix: transaction.ref_block_prefix,
-        expiration: transaction.expiration,
-        operations: transaction.operations,
-        extensions: transaction.extensions
-    };
-    const serializedString = JSON.stringify(serialized);
-    return new TextEncoder().encode(serializedString);
+    const buffer = [];
+    // Serialize ref_block_num (2 bytes, little endian)
+    const refBlockNum = transaction.ref_block_num & 0xFFFF;
+    buffer.push(refBlockNum & 0xFF, (refBlockNum >> 8) & 0xFF);
+    // Serialize ref_block_prefix (4 bytes, little endian)
+    const refBlockPrefix = transaction.ref_block_prefix;
+    buffer.push(refBlockPrefix & 0xFF, (refBlockPrefix >> 8) & 0xFF, (refBlockPrefix >> 16) & 0xFF, (refBlockPrefix >> 24) & 0xFF);
+    // Serialize expiration (4 bytes, seconds since epoch, little endian)
+    const expirationTime = Math.floor(new Date(transaction.expiration + 'Z').getTime() / 1000);
+    buffer.push(expirationTime & 0xFF, (expirationTime >> 8) & 0xFF, (expirationTime >> 16) & 0xFF, (expirationTime >> 24) & 0xFF);
+    // Serialize operations count (1 byte for small counts)
+    buffer.push(transaction.operations.length);
+    // Serialize each operation
+    for (const op of transaction.operations) {
+        const [opType, opData] = op;
+        // Operation type (1 byte for comment = 1)
+        if (opType === 'comment') {
+            buffer.push(1);
+            // Serialize comment operation data
+            const fields = [
+                opData.parent_author,
+                opData.parent_permlink,
+                opData.author,
+                opData.permlink,
+                opData.title,
+                opData.body,
+                opData.json_metadata
+            ];
+            for (const field of fields) {
+                const fieldBytes = new TextEncoder().encode(field);
+                buffer.push(fieldBytes.length);
+                buffer.push(...fieldBytes);
+            }
+        }
+    }
+    // Serialize extensions count (1 byte)
+    buffer.push(transaction.extensions.length);
+    return new Uint8Array(buffer);
 }
 /**
  * ECDSA signing for Hive transactions using secp256k1
