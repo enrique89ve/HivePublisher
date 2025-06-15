@@ -72,6 +72,12 @@ export interface PublishResult {
   error?: string;
 }
 
+export interface VoteResult {
+  success: boolean;
+  transaction_id?: string;
+  error?: string;
+}
+
 export interface Authority {
   key_auths: [string, number][];
   account_auths: [string, number][];

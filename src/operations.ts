@@ -8,6 +8,7 @@ import {
   PostMetadata, 
   PostOperation, 
   PublishResult, 
+  VoteResult,
   HiveError 
 } from './types.js';
 import { parsePrivateKey } from './crypto.js';
@@ -183,6 +184,94 @@ export async function editPost(
     // Create and sign transaction using hive-tx Transaction class
     const tx = new Transaction();
     await tx.create([editOperation]);
+    const signedTransaction = tx.sign(privateKey);
+
+    // Get transaction digest for ID
+    const { txId } = tx.digest();
+
+    // Broadcast transaction
+    const result = await hiveClient.broadcastTransaction(signedTransaction);
+    const transactionId = txId || result.id || result.tx_id;
+
+    return {
+      success: true,
+      transaction_id: transactionId
+    };
+
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof HiveError ? error.message : `Unexpected error: ${error instanceof Error ? error.message : 'Unknown error'}`
+    };
+  }
+}
+
+/**
+ * Upvote a post or comment on Hive blockchain
+ */
+export async function upvote(
+  credentials: HiveCredentials,
+  author: string,
+  permlink: string,
+  weight: number = 100,
+  client?: HiveClient
+): Promise<VoteResult> {
+  try {
+    const hiveClient = client || new HiveClient();
+    
+    // Validate input
+    if (!validateUsername(credentials.username)) {
+      throw new HiveError('Invalid username format');
+    }
+    
+    if (!validateUsername(author)) {
+      throw new HiveError('Invalid author username format');
+    }
+    
+    if (!permlink || permlink.trim() === '') {
+      throw new HiveError('Permlink cannot be empty');
+    }
+    
+    // Validate weight (0-100% converted to 0-10000)
+    if (weight < 0 || weight > 100) {
+      throw new HiveError('Vote weight must be between 0 and 100 percent');
+    }
+    
+    // Convert percentage to Hive weight format (0-10000)
+    const hiveWeight = Math.floor(weight * 100);
+    
+    // Check if voter account exists
+    const voterAccount = await hiveClient.getAccount(credentials.username);
+    if (!voterAccount) {
+      throw new HiveError(`Voter account ${credentials.username} not found`);
+    }
+    
+    // Check if target post/comment exists
+    const targetPost = await hiveClient.getContent(author, permlink);
+    if (!targetPost || !targetPost.author) {
+      throw new HiveError(`Post or comment @${author}/${permlink} not found`);
+    }
+
+    // Create vote operation
+    const voteOperation = [
+      'vote',
+      {
+        voter: credentials.username,
+        author: author,
+        permlink: permlink,
+        weight: hiveWeight
+      }
+    ];
+
+    // Parse private key
+    const privateKey = parsePrivateKey(credentials.postingKey);
+
+    // Dynamic import for ES module compatibility
+    const { Transaction } = await import('hive-tx');
+    
+    // Create and sign transaction using hive-tx Transaction class
+    const tx = new Transaction();
+    await tx.create([voteOperation]);
     const signedTransaction = tx.sign(privateKey);
 
     // Get transaction digest for ID
