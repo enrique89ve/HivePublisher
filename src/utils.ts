@@ -80,7 +80,7 @@ export function validateTags(tags: string[]): boolean {
  * Format date for Hive blockchain
  */
 export function formatHiveDate(date: Date): string {
-  return date.toISOString().split('.')[0];
+  return date.toISOString().split('.')[0]!;
 }
 
 /**

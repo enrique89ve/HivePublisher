@@ -183,7 +183,7 @@ async function exampleErrorHandling() {
       console.log('✅ Error correctly caught:', result.error);
     }
   } catch (error) {
-    console.log('✅ Exception correctly thrown:', error.message);
+    console.log('✅ Exception correctly thrown:', error instanceof Error ? error.message : 'Unknown error');
   }
 }
 

@@ -190,7 +190,7 @@ export async function editPost(
   } catch (error) {
     return {
       success: false,
-      error: error instanceof HiveError ? error.message : `Unexpected error: ${error.message}`
+      error: error instanceof HiveError ? error.message : `Unexpected error: ${error instanceof Error ? error.message : 'Unknown error'}`
     };
   }
 }
