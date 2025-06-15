@@ -1,5 +1,6 @@
 /**
  * Hive blockchain account operations
+ * Based on HAF SQL implementation for comprehensive account data
  */
 import { HiveClient } from './hive-client.js';
 import { AccountInfo } from './types.js';

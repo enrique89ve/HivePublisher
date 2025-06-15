@@ -27,7 +27,8 @@ export class HiveClient {
                 signal: AbortSignal.timeout(this.timeout)
             });
             if (!response.ok) {
-                throw new HiveError(`HTTP ${response.status}: ${response.statusText}`);
+                const errorText = await response.text();
+                throw new HiveError(`HTTP ${response.status}: ${response.statusText} - ${errorText}`);
             }
             const data = await response.json();
             if (data.error) {

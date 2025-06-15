@@ -1,5 +1,6 @@
 /**
  * Hive blockchain account operations
+ * Based on HAF SQL implementation for comprehensive account data
  */
 import { HiveClient } from './hive-client.js';
 import { HiveError } from './types.js';
@@ -10,16 +11,26 @@ import { validateUsername } from './utils.js';
 export async function getAccountInfo(username, client) {
     try {
         const hiveClient = client || new HiveClient();
-        // Validate username
+        // Validate username format
         if (!validateUsername(username)) {
             throw new HiveError('Invalid username format');
         }
-        // Get account data from Hive API using existing getAccount method
+        // Get account data from Hive API
         const account = await hiveClient.getAccount(username);
         if (!account) {
             return null; // Account not found
         }
-        // Map the response to our AccountInfo interface
+        // Get follow count data (with fallback if API unavailable)
+        let followData = { follower_count: 0, following_count: 0 };
+        try {
+            followData = await hiveClient.getFollowCount(username);
+        }
+        catch (error) {
+            // Follow API might not be available on all nodes
+        }
+        // Get global properties for accurate VESTS conversion
+        const globalProps = await hiveClient.getDynamicGlobalProperties();
+        // Map the response to our AccountInfo interface with comprehensive data
         const accountInfo = {
             id: account.id || 0,
             name: account.name || username,
@@ -28,13 +39,13 @@ export async function getAccountInfo(username, client) {
             last_root_post: account.last_root_post || '',
             last_post: account.last_post || '',
             total_posts: account.post_count?.toString() || '0',
-            followers: '0', // Requires separate API call
-            followings: '0', // Requires separate API call  
+            followers: followData.follower_count?.toString() || '0',
+            followings: followData.following_count?.toString() || '0',
             reputation: parseReputation(account.reputation || '0'),
             incoming_vests: account.received_vesting_shares || '0.000000 VESTS',
-            incoming_hp: convertVestsToHp(account.received_vesting_shares || '0.000000 VESTS'),
+            incoming_hp: convertVestsToHp(account.received_vesting_shares || '0.000000 VESTS', globalProps),
             outgoing_vests: account.delegated_vesting_shares || '0.000000 VESTS',
-            outgoing_hp: convertVestsToHp(account.delegated_vesting_shares || '0.000000 VESTS'),
+            outgoing_hp: convertVestsToHp(account.delegated_vesting_shares || '0.000000 VESTS', globalProps),
             creator: account.creator || '',
             created_at: account.created || '',
             owner: account.owner || { key_auths: [], account_auths: [], weight_threshold: 1 },
@@ -49,7 +60,7 @@ export async function getAccountInfo(username, client) {
             reward_hive_balance: account.reward_hive_balance || '0.000 HIVE',
             reward_hbd_balance: account.reward_hbd_balance || '0.000 HBD',
             reward_vests_balance: account.reward_vesting_balance || '0.000000 VESTS',
-            reward_vests_balance_hp: convertVestsToHp(account.reward_vesting_balance || '0.000000 VESTS'),
+            reward_vests_balance_hp: convertVestsToHp(account.reward_vesting_balance || '0.000000 VESTS', globalProps),
             next_vesting_withdrawal: account.next_vesting_withdrawal || null,
             to_withdraw: account.to_withdraw || '0.000000 VESTS',
             vesting_withdraw_rate: account.vesting_withdraw_rate || '0.000000 VESTS',
@@ -62,6 +73,9 @@ export async function getAccountInfo(username, client) {
         return accountInfo;
     }
     catch (error) {
+        if (error instanceof HiveError) {
+            throw error;
+        }
         throw new HiveError(`Failed to get account info: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
 }
@@ -77,7 +91,7 @@ function parseJsonSafely(jsonString) {
     }
 }
 /**
- * Parse Hive reputation from raw value
+ * Parse Hive reputation from raw value using proper algorithm
  */
 function parseReputation(rep) {
     const reputation = typeof rep === 'string' ? parseInt(rep) : rep;
@@ -94,12 +108,25 @@ function parseReputation(rep) {
     return reputationLevel.toFixed(2);
 }
 /**
- * Convert VESTS to approximate HP (simplified calculation)
+ * Convert VESTS to HP using accurate global properties calculation
  */
-function convertVestsToHp(vests) {
-    const vestsAmount = parseFloat(vests.split(' ')[0] || '0');
-    // Simplified conversion rate (actual rate varies)
-    const hpAmount = vestsAmount / 1000000 * 500; // Approximate conversion
-    return hpAmount.toFixed(3);
+function convertVestsToHp(vests, globalProps) {
+    try {
+        const vestsAmount = parseFloat(vests.split(' ')[0] || '0');
+        if (vestsAmount === 0)
+            return '0.000';
+        const totalVestingFund = parseFloat(globalProps.total_vesting_fund_hive?.split(' ')[0] || '0');
+        const totalVestingShares = parseFloat(globalProps.total_vesting_shares?.split(' ')[0] || '1');
+        if (totalVestingShares === 0)
+            return '0.000';
+        const hp = (vestsAmount * totalVestingFund) / totalVestingShares;
+        return hp.toFixed(3);
+    }
+    catch (error) {
+        // Fallback calculation if global properties parsing fails
+        const vestsAmount = parseFloat(vests.split(' ')[0] || '0');
+        const hp = vestsAmount / 2000; // Approximate conversion
+        return hp.toFixed(3);
+    }
 }
 //# sourceMappingURL=accounts.js.map

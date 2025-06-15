@@ -35,7 +35,8 @@ export class HiveClient {
       });
 
       if (!response.ok) {
-        throw new HiveError(`HTTP ${response.status}: ${response.statusText}`);
+        const errorText = await response.text();
+        throw new HiveError(`HTTP ${response.status}: ${response.statusText} - ${errorText}`);
       }
 
       const data: HiveResponse<T> = await response.json();
@@ -72,11 +73,11 @@ export class HiveClient {
   }
 
   /**
-   * Get account information
+   * Get account information using database_api.find_accounts
    */
   async getAccount(username: string): Promise<any> {
-    const accounts = await this.call('condenser_api.get_accounts', [[username]]);
-    return accounts[0] || null;
+    const result = await this.call('database_api.find_accounts', [{ accounts: [username] }]);
+    return result.accounts[0] || null;
   }
 
   /**
