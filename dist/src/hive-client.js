@@ -47,7 +47,7 @@ export class HiveClient {
      * Get dynamic global properties
      */
     async getDynamicGlobalProperties() {
-        return this.call('database_api.get_dynamic_global_properties', []);
+        return this.call('database_api.get_dynamic_global_properties', {});
     }
     /**
      * Broadcast transaction

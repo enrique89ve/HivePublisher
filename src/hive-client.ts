@@ -25,6 +25,7 @@ export class HiveClient {
     };
 
     try {
+      console.log('DEBUG: Sending payload:', JSON.stringify(payload, null, 2));
       const response = await fetch(this.apiNode, {
         method: 'POST',
         headers: {
