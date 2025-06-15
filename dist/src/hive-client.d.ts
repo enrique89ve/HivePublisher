@@ -19,7 +19,7 @@ export declare class HiveClient {
      */
     broadcastTransaction(transaction: any): Promise<any>;
     /**
-     * Get account information using database_api.find_accounts
+     * Get account information using condenser_api.get_accounts
      */
     getAccount(username: string): Promise<any>;
     /**

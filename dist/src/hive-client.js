@@ -18,16 +18,18 @@ export class HiveClient {
             id: Date.now()
         };
         try {
+            console.log('DEBUG: Sending payload:', JSON.stringify(payload, null, 2));
             const response = await fetch(this.apiNode, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify(payload),
-                signal: AbortSignal.timeout(this.timeout)
+                body: JSON.stringify(payload)
             });
+            console.log('DEBUG: Response status:', response.status, response.ok);
             if (!response.ok) {
                 const errorText = await response.text();
+                console.log('DEBUG: Error response body:', errorText);
                 throw new HiveError(`HTTP ${response.status}: ${response.statusText} - ${errorText}`);
             }
             const data = await response.json();
@@ -47,7 +49,7 @@ export class HiveClient {
      * Get dynamic global properties
      */
     async getDynamicGlobalProperties() {
-        return this.call('database_api.get_dynamic_global_properties', {});
+        return this.call('condenser_api.get_dynamic_global_properties', []);
     }
     /**
      * Broadcast transaction
@@ -56,11 +58,11 @@ export class HiveClient {
         return this.call('condenser_api.broadcast_transaction', [transaction]);
     }
     /**
-     * Get account information using database_api.find_accounts
+     * Get account information using condenser_api.get_accounts
      */
     async getAccount(username) {
-        const result = await this.call('database_api.find_accounts', { accounts: [username] });
-        return result.accounts[0] || null;
+        const accounts = await this.call('condenser_api.get_accounts', [[username]]);
+        return accounts[0] || null;
     }
     /**
      * Get content (post/comment)

@@ -40,7 +40,7 @@ export async function getAccountInfo(
     // Get global properties for accurate VESTS conversion
     const globalProps = await hiveClient.getDynamicGlobalProperties();
 
-    // Transform database_api format to our AccountInfo interface
+    // Transform condenser_api format to our AccountInfo interface
     const accountInfo: AccountInfo = {
       id: account.id || 0,
       name: account.name || username,
@@ -52,10 +52,10 @@ export async function getAccountInfo(
       followers: followData.follower_count?.toString() || '0',
       followings: followData.following_count?.toString() || '0',
       reputation: parseReputation(account.reputation || '0'),
-      incoming_vests: formatAssetAmount(account.received_vesting_shares),
-      incoming_hp: convertVestsToHp(formatAssetAmount(account.received_vesting_shares), globalProps),
-      outgoing_vests: formatAssetAmount(account.delegated_vesting_shares),
-      outgoing_hp: convertVestsToHp(formatAssetAmount(account.delegated_vesting_shares), globalProps),
+      incoming_vests: account.received_vesting_shares || '0.000000 VESTS',
+      incoming_hp: convertVestsToHp(account.received_vesting_shares || '0.000000 VESTS', globalProps),
+      outgoing_vests: account.delegated_vesting_shares || '0.000000 VESTS',
+      outgoing_hp: convertVestsToHp(account.delegated_vesting_shares || '0.000000 VESTS', globalProps),
       creator: account.creator || '',
       created_at: account.created || '',
       owner: account.owner || { key_auths: [], account_auths: [], weight_threshold: 1 },
@@ -67,13 +67,13 @@ export async function getAccountInfo(
       last_update: account.last_account_update || '',
       last_owner_update: account.last_owner_update || '',
       recovery: account.recovery_account || '',
-      reward_hive_balance: formatAssetAmount(account.reward_hive_balance, 'HIVE'),
-      reward_hbd_balance: formatAssetAmount(account.reward_hbd_balance, 'HBD'),
-      reward_vests_balance: formatAssetAmount(account.reward_vesting_balance, 'VESTS'),
-      reward_vests_balance_hp: convertVestsToHp(formatAssetAmount(account.reward_vesting_balance), globalProps),
+      reward_hive_balance: account.reward_hive_balance || '0.000 HIVE',
+      reward_hbd_balance: account.reward_hbd_balance || '0.000 HBD',
+      reward_vests_balance: account.reward_vesting_balance || '0.000000 VESTS',
+      reward_vests_balance_hp: convertVestsToHp(account.reward_vesting_balance || '0.000000 VESTS', globalProps),
       next_vesting_withdrawal: account.next_vesting_withdrawal || null,
       to_withdraw: account.to_withdraw?.toString() || '0.000000 VESTS',
-      vesting_withdraw_rate: formatAssetAmount(account.vesting_withdraw_rate),
+      vesting_withdraw_rate: account.vesting_withdraw_rate || '0.000000 VESTS',
       withdrawn: account.withdrawn?.toString() || '0.000000 VESTS',
       withdraw_routes: account.withdraw_routes || null,
       proxy: account.proxy || null,

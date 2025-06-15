@@ -9,7 +9,7 @@ export class HiveClient {
   private timeout: number;
 
   constructor(config: HiveConfig = {}) {
-    this.apiNode = config.apiNode || 'https://api.hive.blog';
+    this.apiNode = config.apiNode || 'https://api.deathwing.me';
     this.timeout = config.timeout || 10000;
   }
 
@@ -25,7 +25,6 @@ export class HiveClient {
     };
 
     try {
-      console.log('DEBUG: Sending payload:', JSON.stringify(payload, null, 2));
       const response = await fetch(this.apiNode, {
         method: 'POST',
         headers: {
@@ -63,7 +62,7 @@ export class HiveClient {
    * Get dynamic global properties
    */
   async getDynamicGlobalProperties(): Promise<DynamicGlobalProperties> {
-    return this.call('database_api.get_dynamic_global_properties', {});
+    return this.call('condenser_api.get_dynamic_global_properties', []);
   }
 
   /**
@@ -74,11 +73,11 @@ export class HiveClient {
   }
 
   /**
-   * Get account information using database_api.find_accounts
+   * Get account information using condenser_api.get_accounts
    */
   async getAccount(username: string): Promise<any> {
-    const result = await this.call('database_api.find_accounts', { accounts: [username] });
-    return result.accounts[0] || null;
+    const accounts = await this.call('condenser_api.get_accounts', [[username]]);
+    return accounts[0] || null;
   }
 
   /**
