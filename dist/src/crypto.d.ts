@@ -1,29 +1,30 @@
 /**
- * Cryptographic utilities for Hive blockchain operations
- * Minimal implementation using hive-tx library for transaction signing
+ * Lightweight cryptographic utilities for Hive blockchain operations
+ * Custom implementation using only secp256k1 - eliminates hive-tx dependency
  */
-import { PrivateKey } from 'hive-tx';
 /**
- * Parse WIF (Wallet Import Format) private key using hive-tx
- *
- * @param privateKeyWif - WIF-formatted private key string
- * @returns PrivateKey instance for transaction signing
- * @throws HiveError if key format is invalid
+ * Parse WIF (Wallet Import Format) private key
+ * Custom implementation without hive-tx dependency
  */
-export declare function parsePrivateKey(privateKeyWif: string): PrivateKey;
+export declare function parsePrivateKey(privateKeyWif: string): Buffer;
 /**
- * Sign transaction using hive-tx library
- *
- * @param transaction - Transaction object to sign
- * @param privateKey - PrivateKey instance for signing
- * @returns Signature string for the transaction
+ * Sign transaction hash using secp256k1
  */
-export declare function signTransaction(transaction: any, privateKey: PrivateKey): string;
+export declare function signTransaction(transaction: any, privateKey: Buffer): string;
 /**
  * Generate transaction ID from transaction object
- *
- * @param transaction - Transaction object
- * @returns Promise resolving to transaction ID string
  */
-export declare function generateTransactionId(transaction: any): Promise<string>;
+export declare function generateTransactionId(transaction: any): string;
+/**
+ * Create a complete Hive transaction structure
+ */
+export declare function createHiveTransaction(operations: any[], options: {
+    ref_block_num: number;
+    ref_block_prefix: number;
+    expiration: string;
+}): any;
+/**
+ * Sign and finalize Hive transaction
+ */
+export declare function signHiveTransaction(transaction: any, privateKey: Buffer): any;
 //# sourceMappingURL=crypto.d.ts.map

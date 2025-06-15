@@ -11,7 +11,7 @@ import {
   VoteResult,
   HiveError
 } from './types.js';
-import { parsePrivateKey } from './crypto.js';
+import { parsePrivateKey, createHiveTransaction, signHiveTransaction } from './crypto.js';
 import { generatePermlink, validateUsername, validateTags } from './utils.js';
 
 /**
