@@ -6,9 +6,18 @@ export class HiveClient {
     constructor(config = {}) {
         this.currentNodeIndex = 0;
         this.nodeHealthStatus = new Map();
+        this.enableRestApi = false;
+        this.taposCache = {
+            head_block_id: '',
+            head_block_time: new Date(),
+            cached_at: 0
+        };
         this.mainnet = config.mainnet !== false; // Default to mainnet
         this.timeout = config.timeout || 10000;
         this.maxRetries = config.maxRetries || 3;
+        this.enableRestApi = config.enableRestApi || false;
+        this.requestInterceptor = config.requestInterceptor;
+        this.responseInterceptor = config.responseInterceptor;
         // Set primary node and fallback list
         this.apiNode = config.apiNode || this.getDefaultApiNode();
         this.fallbackNodes = config.fallbackNodes || this.getDefaultFallbackNodes();
@@ -98,27 +107,37 @@ export class HiveClient {
         throw new HiveError(`All nodes failed after ${this.maxRetries} attempts. Last error: ${lastError?.message || 'Unknown error'}`);
     }
     /**
-     * Make a single request to a specific node
+     * Make a single request to a specific node with WAX-inspired interceptors
      */
     async makeRequest(node, method, params = []) {
         const id = Math.floor(Math.random() * 1000000);
-        const payload = {
-            jsonrpc: '2.0',
-            method,
-            params,
-            id
+        let requestConfig = {
+            url: node,
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                'User-Agent': 'HiveTS/1.0.0'
+            },
+            body: JSON.stringify({
+                jsonrpc: '2.0',
+                method,
+                params,
+                id
+            }),
+            timeout: this.timeout
         };
+        // Apply request interceptor (WAX pattern)
+        if (this.requestInterceptor) {
+            requestConfig = await this.requestInterceptor(requestConfig);
+        }
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), this.timeout);
+        const timeoutId = setTimeout(() => controller.abort(), requestConfig.timeout);
         try {
-            const response = await fetch(node, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json',
-                    'User-Agent': 'HiveTS/1.0.0'
-                },
-                body: JSON.stringify(payload),
+            const response = await fetch(requestConfig.url, {
+                method: requestConfig.method,
+                headers: requestConfig.headers,
+                body: requestConfig.body,
                 signal: controller.signal
             });
             clearTimeout(timeoutId);
@@ -145,7 +164,12 @@ export class HiveClient {
             if (data.result === undefined) {
                 throw new HiveError('Server returned empty result');
             }
-            return data.result;
+            let result = data.result;
+            // Apply response interceptor (WAX pattern)
+            if (this.responseInterceptor) {
+                result = await this.responseInterceptor(result);
+            }
+            return result;
         }
         catch (error) {
             clearTimeout(timeoutId);
@@ -153,7 +177,7 @@ export class HiveClient {
                 throw error;
             }
             if (error instanceof Error && error.name === 'AbortError') {
-                throw new HiveError(`Request timeout after ${this.timeout}ms`);
+                throw new HiveError(`Request timeout after ${requestConfig.timeout}ms`);
             }
             throw new HiveError(`Network error: ${error instanceof Error ? error.message : 'Unknown error'}`);
         }
@@ -236,6 +260,110 @@ export class HiveClient {
             status[node] = { ...health };
         }
         return status;
+    }
+    /**
+     * WAX-inspired extension system for adding custom functionality
+     */
+    extend(extensions) {
+        return Object.assign(this, extensions);
+    }
+    /**
+     * WAX-inspired proxy support with custom interceptors
+     */
+    withProxy(requestInterceptor, responseInterceptor) {
+        const newClient = new HiveClient({
+            apiNode: this.apiNode,
+            fallbackNodes: this.fallbackNodes,
+            timeout: this.timeout,
+            mainnet: this.mainnet,
+            maxRetries: this.maxRetries,
+            enableRestApi: this.enableRestApi,
+            requestInterceptor,
+            responseInterceptor
+        });
+        return newClient;
+    }
+    /**
+     * Get cached TAPOS data with intelligent refresh (WAX pattern)
+     */
+    async getTaposCache() {
+        const now = Date.now();
+        const cacheAge = now - this.taposCache.cached_at;
+        // Refresh cache if older than 30 seconds or empty
+        if (cacheAge > 30000 || !this.taposCache.head_block_id) {
+            try {
+                const globalProps = await this.getDynamicGlobalProperties();
+                this.taposCache = {
+                    head_block_id: globalProps.head_block_id,
+                    head_block_time: new Date(globalProps.time + 'Z'),
+                    cached_at: now
+                };
+            }
+            catch (error) {
+                // Return cached data if refresh fails
+                if (this.taposCache.head_block_id) {
+                    return {
+                        head_block_id: this.taposCache.head_block_id,
+                        head_block_time: this.taposCache.head_block_time
+                    };
+                }
+                throw error;
+            }
+        }
+        return {
+            head_block_id: this.taposCache.head_block_id,
+            head_block_time: this.taposCache.head_block_time
+        };
+    }
+    /**
+     * Advanced node performance metrics (WAX-inspired)
+     */
+    async getNodeMetrics() {
+        const nodes = this.getAllNodes();
+        const metrics = {};
+        const checks = await Promise.allSettled(nodes.map(async (node) => {
+            const startTime = Date.now();
+            try {
+                const response = await this.makeRequest(node, 'condenser_api.get_dynamic_global_properties', []);
+                const latency = Date.now() - startTime;
+                return {
+                    node,
+                    healthy: true,
+                    latency,
+                    blockHeight: response.head_block_number,
+                    lastCheck: Date.now()
+                };
+            }
+            catch (error) {
+                return {
+                    node,
+                    healthy: false,
+                    latency: -1,
+                    blockHeight: -1,
+                    lastCheck: Date.now()
+                };
+            }
+        }));
+        checks.forEach((result, index) => {
+            if (result.status === 'fulfilled') {
+                const data = result.value;
+                metrics[data.node] = {
+                    healthy: data.healthy,
+                    latency: data.latency,
+                    blockHeight: data.blockHeight,
+                    lastCheck: data.lastCheck
+                };
+            }
+            else {
+                metrics[nodes[index]] = {
+                    healthy: false,
+                    latency: -1,
+                    blockHeight: -1,
+                    lastCheck: Date.now()
+                };
+            }
+        });
+        return metrics;
     }
     /**
      * Get dynamic global properties

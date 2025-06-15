@@ -12,6 +12,25 @@ export interface HiveConfig {
     mainnet?: boolean;
     /** Maximum retry attempts for failed nodes */
     maxRetries?: number;
+    /** Enable REST API support (WAX-inspired) */
+    enableRestApi?: boolean;
+    /** Request interceptor for middleware */
+    requestInterceptor?: RequestInterceptor;
+    /** Response interceptor for middleware */
+    responseInterceptor?: ResponseInterceptor;
+}
+export interface RequestInterceptor {
+    (config: RequestConfig): RequestConfig | Promise<RequestConfig>;
+}
+export interface ResponseInterceptor {
+    (response: any): any | Promise<any>;
+}
+export interface RequestConfig {
+    url: string;
+    method: string;
+    headers: Record<string, string>;
+    body: string;
+    timeout: number;
 }
 export interface HiveCredentials {
     /** Hive username */

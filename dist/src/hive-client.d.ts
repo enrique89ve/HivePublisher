@@ -1,7 +1,7 @@
 /**
  * Main Hive client for blockchain communication
  */
-import { HiveConfig, DynamicGlobalProperties } from './types.js';
+import { HiveConfig, DynamicGlobalProperties, RequestInterceptor, ResponseInterceptor } from './types.js';
 export declare class HiveClient {
     private apiNode;
     private fallbackNodes;
@@ -10,6 +10,10 @@ export declare class HiveClient {
     private maxRetries;
     private currentNodeIndex;
     private nodeHealthStatus;
+    private requestInterceptor?;
+    private responseInterceptor?;
+    private enableRestApi;
+    private taposCache;
     constructor(config?: HiveConfig);
     /**
      * Get default primary API node based on network configuration
@@ -37,7 +41,7 @@ export declare class HiveClient {
      */
     call<T = any>(method: string, params?: any): Promise<T>;
     /**
-     * Make a single request to a specific node
+     * Make a single request to a specific node with WAX-inspired interceptors
      */
     private makeRequest;
     /**
@@ -67,6 +71,30 @@ export declare class HiveClient {
         healthy: boolean;
         lastCheck: number;
     }>;
+    /**
+     * WAX-inspired extension system for adding custom functionality
+     */
+    extend<T>(extensions: T): this & T;
+    /**
+     * WAX-inspired proxy support with custom interceptors
+     */
+    withProxy(requestInterceptor: RequestInterceptor, responseInterceptor: ResponseInterceptor): HiveClient;
+    /**
+     * Get cached TAPOS data with intelligent refresh (WAX pattern)
+     */
+    getTaposCache(): Promise<{
+        head_block_id: string;
+        head_block_time: Date;
+    }>;
+    /**
+     * Advanced node performance metrics (WAX-inspired)
+     */
+    getNodeMetrics(): Promise<Record<string, {
+        healthy: boolean;
+        latency: number;
+        blockHeight: number;
+        lastCheck: number;
+    }>>;
     /**
      * Get dynamic global properties
      */
