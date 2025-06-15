@@ -1,7 +1,7 @@
 /**
  * Main Hive client for blockchain communication
  */
-import { HiveError } from './types';
+import { HiveError } from './types.js';
 export class HiveClient {
     constructor(config = {}) {
         this.apiNode = config.apiNode || 'https://api.hive.blog';

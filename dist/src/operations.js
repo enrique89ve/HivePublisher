@@ -1,10 +1,10 @@
 /**
  * Hive blockchain operations for posts
  */
-import { HiveClient } from './hive-client';
-import { HiveError } from './types';
-import { parsePrivateKey } from './crypto';
-import { generatePermlink, validateUsername, validateTags } from './utils';
+import { HiveClient } from './hive-client.js';
+import { HiveError } from './types.js';
+import { parsePrivateKey } from './crypto.js';
+import { generatePermlink, validateUsername, validateTags } from './utils.js';
 /**
  * Create and publish a new post to Hive blockchain
  */
@@ -53,8 +53,10 @@ export async function createPost(credentials, metadata, client) {
         ];
         // Parse private key
         const privateKey = parsePrivateKey(credentials.postingKey);
+        // Dynamic import for ES module compatibility
+        const { Transaction } = await import('hive-tx');
         // Create and sign transaction using hive-tx Transaction class
-        const tx = new HiveTx();
+        const tx = new Transaction();
         await tx.create([commentOperation]);
         const signedTransaction = tx.sign(privateKey);
         // Broadcast transaction
@@ -129,8 +131,10 @@ export async function editPost(credentials, permlink, metadata, client) {
         ];
         // Parse private key
         const privateKey = parsePrivateKey(credentials.postingKey);
+        // Dynamic import for ES module compatibility
+        const { Transaction } = await import('hive-tx');
         // Create and sign transaction using hive-tx Transaction class
-        const tx = new HiveTx();
+        const tx = new Transaction();
         await tx.create([editOperation]);
         const signedTransaction = tx.sign(privateKey);
         // Broadcast transaction
