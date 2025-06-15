@@ -85,4 +85,11 @@ export class HiveClient {
   async getContent(author: string, permlink: string): Promise<any> {
     return this.call('condenser_api.get_content', [author, permlink]);
   }
+
+  /**
+   * Get detailed account information
+   */
+  async getAccountInfo(username: string): Promise<any> {
+    return this.call('condenser_api.get_accounts', [[username]]);
+  }
 }

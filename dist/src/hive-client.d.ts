@@ -26,5 +26,9 @@ export declare class HiveClient {
      * Get content (post/comment)
      */
     getContent(author: string, permlink: string): Promise<any>;
+    /**
+     * Get detailed account information
+     */
+    getAccountInfo(username: string): Promise<any>;
 }
 //# sourceMappingURL=hive-client.d.ts.map

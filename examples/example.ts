@@ -2,7 +2,7 @@
  * Example usage of HiveTS library
  */
 
-import { createPost, editPost, HiveClient, HiveCredentials, PostMetadata } from '../src/index.js';
+import { createPost, editPost, getAccountInfo, HiveClient, HiveCredentials, PostMetadata } from '../src/index.js';
 
 // Example function to demonstrate creating a post
 async function exampleCreatePost() {

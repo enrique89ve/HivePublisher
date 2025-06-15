@@ -67,5 +67,11 @@ export class HiveClient {
     async getContent(author, permlink) {
         return this.call('condenser_api.get_content', [author, permlink]);
     }
+    /**
+     * Get detailed account information
+     */
+    async getAccountInfo(username) {
+        return this.call('condenser_api.get_accounts', [[username]]);
+    }
 }
 //# sourceMappingURL=hive-client.js.map
