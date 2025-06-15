@@ -8,37 +8,63 @@ export class HiveClient {
         this.timeout = config.timeout || 10000;
     }
     /**
-     * Make RPC call to Hive API
+     * Make RPC call to Hive API with proper error handling and request configuration
      */
     async call(method, params = []) {
+        // Ensure consistent ID generation
+        const id = Math.floor(Math.random() * 1000000);
         const payload = {
             jsonrpc: '2.0',
             method,
             params,
-            id: Date.now()
+            id
         };
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), this.timeout);
         try {
             const response = await fetch(this.apiNode, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'User-Agent': 'HiveTS/1.0.0'
                 },
                 body: JSON.stringify(payload),
-                signal: AbortSignal.timeout(this.timeout)
+                signal: controller.signal
             });
+            clearTimeout(timeoutId);
             if (!response.ok) {
-                const errorText = await response.text();
-                throw new HiveError(`HTTP ${response.status}: ${response.statusText} - ${errorText}`);
+                let errorText = '';
+                try {
+                    errorText = await response.text();
+                }
+                catch (e) {
+                    errorText = 'Unable to read error response';
+                }
+                throw new HiveError(`HTTP ${response.status}: ${response.statusText}${errorText ? ' - ' + errorText : ''}`);
             }
-            const data = await response.json();
+            let data;
+            try {
+                data = await response.json();
+            }
+            catch (e) {
+                throw new HiveError('Invalid JSON response from server');
+            }
             if (data.error) {
-                throw new HiveError(data.error.message, data.error.code, data.error.data);
+                throw new HiveError(data.error.message || 'Unknown server error', data.error.code, data.error.data);
+            }
+            if (data.result === undefined) {
+                throw new HiveError('Server returned empty result');
             }
             return data.result;
         }
         catch (error) {
+            clearTimeout(timeoutId);
             if (error instanceof HiveError) {
                 throw error;
+            }
+            if (error instanceof Error && error.name === 'AbortError') {
+                throw new HiveError(`Request timeout after ${this.timeout}ms`);
             }
             throw new HiveError(`Network error: ${error instanceof Error ? error.message : 'Unknown error'}`);
         }
@@ -54,6 +80,12 @@ export class HiveClient {
      */
     async broadcastTransaction(transaction) {
         return this.call('condenser_api.broadcast_transaction', [transaction]);
+    }
+    /**
+     * Broadcast transaction synchronously (alternative method)
+     */
+    async broadcastTransactionSynchronous(transaction) {
+        return this.call('condenser_api.broadcast_transaction_synchronous', [transaction]);
     }
     /**
      * Get account information using condenser_api.get_accounts

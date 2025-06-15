@@ -7,7 +7,7 @@ export declare class HiveClient {
     private timeout;
     constructor(config?: HiveConfig);
     /**
-     * Make RPC call to Hive API
+     * Make RPC call to Hive API with proper error handling and request configuration
      */
     call<T = any>(method: string, params?: any): Promise<T>;
     /**
@@ -18,6 +18,10 @@ export declare class HiveClient {
      * Broadcast transaction
      */
     broadcastTransaction(transaction: any): Promise<any>;
+    /**
+     * Broadcast transaction synchronously (alternative method)
+     */
+    broadcastTransactionSynchronous(transaction: any): Promise<any>;
     /**
      * Get account information using condenser_api.get_accounts
      */
