@@ -69,22 +69,39 @@ export function parsePrivateKey(privateKeyWif) {
     }
 }
 /**
- * Create transaction hash for signing
+ * Serialize transaction for Hive blockchain format
  */
-function createTransactionHash(transaction) {
-    const serialized = JSON.stringify(transaction);
-    return createHash('sha256').update(serialized, 'utf8').digest();
+function serializeTransaction(transaction) {
+    // Simplified Hive transaction serialization
+    // This is a basic implementation - Hive uses a specific binary format
+    const json = JSON.stringify(transaction, null, 0);
+    return Buffer.from(json, 'utf8');
 }
 /**
- * Sign transaction hash using secp256k1
+ * Create transaction hash for signing (Hive-specific)
+ */
+function createTransactionHash(transaction) {
+    const serialized = serializeTransaction(transaction);
+    return createHash('sha256').update(serialized).digest();
+}
+/**
+ * Sign transaction hash using secp256k1 with Hive format
  */
 export function signTransaction(transaction, privateKey) {
     try {
         const txHash = createTransactionHash(transaction);
         const signature = secp256k1.ecdsaSign(txHash, privateKey);
-        // Convert to DER format and encode as hex
-        const derSignature = secp256k1.signatureExport(signature.signature);
-        return derSignature.toString('hex') + '01'; // Add SIGHASH_ALL flag
+        // Convert signature to hex format (simplified for Hive)
+        const r = signature.signature.slice(0, 32);
+        const s = signature.signature.slice(32, 64);
+        const recoveryId = signature.recid;
+        // Combine r, s, and recovery id for Hive format
+        const combined = Buffer.concat([
+            Buffer.from([recoveryId + 31]), // Hive uses 31 as base for recovery
+            r,
+            s
+        ]);
+        return combined.toString('hex');
     }
     catch (error) {
         throw new HiveError(`Transaction signing failed: ${error instanceof Error ? error.message : 'Unknown error'}`);

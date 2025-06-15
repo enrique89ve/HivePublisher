@@ -8,7 +8,7 @@
  */
 export declare function parsePrivateKey(privateKeyWif: string): Buffer;
 /**
- * Sign transaction hash using secp256k1
+ * Sign transaction hash using secp256k1 with Hive format
  */
 export declare function signTransaction(transaction: any, privateKey: Buffer): string;
 /**
