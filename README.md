@@ -154,6 +154,11 @@ const client = new HiveClient({
 // Monitor active node
 console.log(client.getCurrentNode());
 console.log(client.getConfiguredNodes());
+
+// Advanced monitoring (WAX-inspired)
+const healthyNodes = await client.getHealthyNodes();
+const healthStatus = client.getNodeHealthStatus();
+console.log(`Active nodes: ${healthyNodes.length}/${client.getConfiguredNodes().length}`);
 ```
 
 ## Error Handling
