@@ -192,6 +192,7 @@ The `examples/` directory contains comprehensive usage demonstrations:
 - `network-demo.ts` - Mainnet/testnet configuration
 - `node-failover-demo.ts` - API node failover and reliability
 - `wax-comparison-demo.ts` - Architecture comparison with WAX patterns
+- `wax-improvements-demo.ts` - WAX-inspired enterprise features
 - `comprehensive-demo.ts` - Complete library demonstration
 
 ## Development
