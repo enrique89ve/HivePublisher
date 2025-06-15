@@ -121,7 +121,7 @@ export function parsePrivateKey(privateKeyWif) {
         return privateKey;
     }
     catch (error) {
-        throw new HiveError(`Invalid private key format: ${error.message}`);
+        throw new HiveError(`Invalid private key format: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
 }
 /**

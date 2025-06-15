@@ -77,7 +77,7 @@ export async function createPost(
     const transaction: Transaction = {
       ref_block_num: props.head_block_number & 0xFFFF,
       ref_block_prefix: parseInt(props.head_block_id.substring(8, 16), 16),
-      expiration: new Date(Date.now() + 60000).toISOString().split('.')[0], // 1 minute from now
+      expiration: new Date(Date.now() + 60000).toISOString().split('.')[0]!, // 1 minute from now
       operations: [['comment', postOp]],
       extensions: [],
       signatures: []
@@ -100,7 +100,7 @@ export async function createPost(
   } catch (error) {
     return {
       success: false,
-      error: error instanceof HiveError ? error.message : `Unexpected error: ${error.message}`
+      error: error instanceof HiveError ? error.message : `Unexpected error: ${error instanceof Error ? error.message : 'Unknown error'}`
     };
   }
 }
@@ -167,7 +167,7 @@ export async function editPost(
     const transaction: Transaction = {
       ref_block_num: props.head_block_number & 0xFFFF,
       ref_block_prefix: parseInt(props.head_block_id.substring(8, 16), 16),
-      expiration: new Date(Date.now() + 60000).toISOString().split('.')[0], // 1 minute from now
+      expiration: new Date(Date.now() + 60000).toISOString().split('.')[0]!, // 1 minute from now
       operations: [['comment', editOp]],
       extensions: [],
       signatures: []

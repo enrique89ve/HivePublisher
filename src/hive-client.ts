@@ -53,7 +53,7 @@ export class HiveClient {
       if (error instanceof HiveError) {
         throw error;
       }
-      throw new HiveError(`Network error: ${error.message}`);
+      throw new HiveError(`Network error: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 

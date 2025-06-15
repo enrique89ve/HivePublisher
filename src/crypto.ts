@@ -55,9 +55,9 @@ function base58Encode(bytes: Uint8Array): string {
 
   let digits = [0];
   for (let i = 0; i < bytes.length; i++) {
-    let carry = bytes[i];
+    let carry = bytes[i]!;
     for (let j = 0; j < digits.length; j++) {
-      carry += digits[j] << 8;
+      carry += digits[j]! << 8;
       digits[j] = carry % 58;
       carry = Math.floor(carry / 58);
     }
@@ -85,7 +85,7 @@ function base58Decode(str: string): Uint8Array {
 
   let bytes = [0];
   for (let i = 0; i < str.length; i++) {
-    const char = str[i];
+    const char = str[i]!;
     const value = BASE58_ALPHABET.indexOf(char);
     if (value === -1) {
       throw new HiveError(`Invalid character in base58 string: ${char}`);
@@ -93,7 +93,7 @@ function base58Decode(str: string): Uint8Array {
 
     let carry = value;
     for (let j = 0; j < bytes.length; j++) {
-      carry += bytes[j] * 58;
+      carry += bytes[j]! * 58;
       bytes[j] = carry & 0xff;
       carry >>= 8;
     }
@@ -114,7 +114,7 @@ function base58Decode(str: string): Uint8Array {
     result[i] = 0;
   }
   for (let i = 0; i < bytes.length; i++) {
-    result[leadingOnes + i] = bytes[bytes.length - 1 - i];
+    result[leadingOnes + i] = bytes[bytes.length - 1 - i]!;
   }
 
   return result;
@@ -138,7 +138,7 @@ export function parsePrivateKey(privateKeyWif: string): Uint8Array {
     // Verify checksum (simplified verification)
     return privateKey;
   } catch (error) {
-    throw new HiveError(`Invalid private key format: ${error.message}`);
+    throw new HiveError(`Invalid private key format: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 }
 
