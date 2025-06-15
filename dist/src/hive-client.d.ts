@@ -9,7 +9,7 @@ export declare class HiveClient {
     /**
      * Make RPC call to Hive API
      */
-    call<T = any>(method: string, params?: any[]): Promise<T>;
+    call<T = any>(method: string, params?: any): Promise<T>;
     /**
      * Get dynamic global properties
      */
@@ -19,7 +19,7 @@ export declare class HiveClient {
      */
     broadcastTransaction(transaction: any): Promise<any>;
     /**
-     * Get account information
+     * Get account information using database_api.find_accounts
      */
     getAccount(username: string): Promise<any>;
     /**

@@ -16,7 +16,7 @@ export class HiveClient {
   /**
    * Make RPC call to Hive API
    */
-  async call<T = any>(method: string, params: any[] = []): Promise<T> {
+  async call<T = any>(method: string, params: any = []): Promise<T> {
     const payload = {
       jsonrpc: '2.0',
       method,
@@ -62,7 +62,7 @@ export class HiveClient {
    * Get dynamic global properties
    */
   async getDynamicGlobalProperties(): Promise<DynamicGlobalProperties> {
-    return this.call('condenser_api.get_dynamic_global_properties');
+    return this.call('database_api.get_dynamic_global_properties', {});
   }
 
   /**
@@ -76,7 +76,7 @@ export class HiveClient {
    * Get account information using database_api.find_accounts
    */
   async getAccount(username: string): Promise<any> {
-    const result = await this.call('database_api.find_accounts', [{ accounts: [username] }]);
+    const result = await this.call('database_api.find_accounts', { accounts: [username] });
     return result.accounts[0] || null;
   }
 

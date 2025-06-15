@@ -47,7 +47,7 @@ export class HiveClient {
      * Get dynamic global properties
      */
     async getDynamicGlobalProperties() {
-        return this.call('condenser_api.get_dynamic_global_properties');
+        return this.call('database_api.get_dynamic_global_properties', []);
     }
     /**
      * Broadcast transaction
@@ -56,11 +56,11 @@ export class HiveClient {
         return this.call('condenser_api.broadcast_transaction', [transaction]);
     }
     /**
-     * Get account information
+     * Get account information using database_api.find_accounts
      */
     async getAccount(username) {
-        const accounts = await this.call('condenser_api.get_accounts', [[username]]);
-        return accounts[0] || null;
+        const result = await this.call('database_api.find_accounts', { accounts: [username] });
+        return result.accounts[0] || null;
     }
     /**
      * Get content (post/comment)
