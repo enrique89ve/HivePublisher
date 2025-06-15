@@ -3,7 +3,7 @@
  * Extracted minimal functions from hivedb
  */
 
-import * as secp256k1 from 'secp256k1';
+import { PrivateKey } from 'hive-tx';
 import { HiveError } from './types';
 
 // Base58 alphabet used by Hive
@@ -122,112 +122,23 @@ function base58Decode(str: string): Uint8Array {
 }
 
 /**
- * Parse WIF (Wallet Import Format) private key
+ * Parse WIF (Wallet Import Format) private key using hive-tx
  */
-export function parsePrivateKey(privateKeyWif: string): Uint8Array {
+export function parsePrivateKey(privateKeyWif: string): PrivateKey {
   try {
-    const decoded = base58Decode(privateKeyWif);
-    
-    if (decoded.length !== 37) {
-      throw new HiveError('Invalid private key length');
-    }
-
-    // Extract the 32-byte private key (excluding version byte and checksum)
-    const privateKey = decoded.slice(1, 33);
-    const checksum = decoded.slice(33);
-    
-    // Verify checksum (simplified verification)
-    return privateKey;
+    return PrivateKey.from(privateKeyWif);
   } catch (error) {
     throw new HiveError(`Invalid private key format: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 }
 
 /**
- * Serialize transaction for signing (Hive binary format)
+ * Sign transaction using hive-tx library
  */
-function serializeTransaction(transaction: any): Uint8Array {
-  const buffer: number[] = [];
-  
-  // Serialize ref_block_num (2 bytes, little endian)
-  const refBlockNum = transaction.ref_block_num & 0xFFFF;
-  buffer.push(refBlockNum & 0xFF, (refBlockNum >> 8) & 0xFF);
-  
-  // Serialize ref_block_prefix (4 bytes, little endian)
-  const refBlockPrefix = transaction.ref_block_prefix;
-  buffer.push(
-    refBlockPrefix & 0xFF,
-    (refBlockPrefix >> 8) & 0xFF,
-    (refBlockPrefix >> 16) & 0xFF,
-    (refBlockPrefix >> 24) & 0xFF
-  );
-  
-  // Serialize expiration (4 bytes, seconds since epoch, little endian)
-  const expirationTime = Math.floor(new Date(transaction.expiration + 'Z').getTime() / 1000);
-  buffer.push(
-    expirationTime & 0xFF,
-    (expirationTime >> 8) & 0xFF,
-    (expirationTime >> 16) & 0xFF,
-    (expirationTime >> 24) & 0xFF
-  );
-  
-  // Serialize operations count (1 byte for small counts)
-  buffer.push(transaction.operations.length);
-  
-  // Serialize each operation
-  for (const op of transaction.operations) {
-    const [opType, opData] = op;
-    
-    // Operation type (1 byte for comment = 1)
-    if (opType === 'comment') {
-      buffer.push(1);
-      
-      // Serialize comment operation data
-      const fields = [
-        opData.parent_author,
-        opData.parent_permlink,
-        opData.author,
-        opData.permlink,
-        opData.title,
-        opData.body,
-        opData.json_metadata
-      ];
-      
-      for (const field of fields) {
-        const fieldBytes = new TextEncoder().encode(field);
-        buffer.push(fieldBytes.length);
-        buffer.push(...fieldBytes);
-      }
-    }
-  }
-  
-  // Serialize extensions count (1 byte)
-  buffer.push(transaction.extensions.length);
-  
-  return new Uint8Array(buffer);
-}
-
-/**
- * ECDSA signing for Hive transactions using secp256k1
- */
-export async function signTransaction(transaction: any, privateKey: Uint8Array): Promise<string> {
+export function signTransaction(transaction: any, privateKey: PrivateKey): string {
   try {
-    // Serialize transaction
-    const serializedTx = serializeTransaction(transaction);
-    
-    // Create hash for signing
-    const hash = await sha256(serializedTx);
-    
-    // Sign with secp256k1
-    const signature = secp256k1.ecdsaSign(hash, privateKey);
-    
-    // Format signature for Hive (compressed format)
-    const compressedSig = new Uint8Array(65);
-    compressedSig.set(signature.signature);
-    compressedSig[64] = signature.recid;
-    
-    // Convert to hex string
-    return bytesToHex(compressedSig);
+    const signature = privateKey.sign(transaction);
+    return signature.toString();
   } catch (error) {
     throw new HiveError(`Transaction signing failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }

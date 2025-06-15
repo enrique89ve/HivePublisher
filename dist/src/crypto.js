@@ -3,44 +3,11 @@
  * Cryptographic utilities for Hive blockchain
  * Extracted minimal functions from hivedb
  */
-var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    var desc = Object.getOwnPropertyDescriptor(m, k);
-    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
-      desc = { enumerable: true, get: function() { return m[k]; } };
-    }
-    Object.defineProperty(o, k2, desc);
-}) : (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    o[k2] = m[k];
-}));
-var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
-    Object.defineProperty(o, "default", { enumerable: true, value: v });
-}) : function(o, v) {
-    o["default"] = v;
-});
-var __importStar = (this && this.__importStar) || (function () {
-    var ownKeys = function(o) {
-        ownKeys = Object.getOwnPropertyNames || function (o) {
-            var ar = [];
-            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
-            return ar;
-        };
-        return ownKeys(o);
-    };
-    return function (mod) {
-        if (mod && mod.__esModule) return mod;
-        var result = {};
-        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
-        __setModuleDefault(result, mod);
-        return result;
-    };
-})();
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.parsePrivateKey = parsePrivateKey;
 exports.signTransaction = signTransaction;
 exports.generateTransactionId = generateTransactionId;
-const secp256k1 = __importStar(require("secp256k1"));
+const hive_tx_1 = require("hive-tx");
 const types_1 = require("./types");
 // Base58 alphabet used by Hive
 const BASE58_ALPHABET = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
@@ -145,84 +112,23 @@ function base58Decode(str) {
     return result;
 }
 /**
- * Parse WIF (Wallet Import Format) private key
+ * Parse WIF (Wallet Import Format) private key using hive-tx
  */
 function parsePrivateKey(privateKeyWif) {
     try {
-        const decoded = base58Decode(privateKeyWif);
-        if (decoded.length !== 37) {
-            throw new types_1.HiveError('Invalid private key length');
-        }
-        // Extract the 32-byte private key (excluding version byte and checksum)
-        const privateKey = decoded.slice(1, 33);
-        const checksum = decoded.slice(33);
-        // Verify checksum (simplified verification)
-        return privateKey;
+        return hive_tx_1.PrivateKey.from(privateKeyWif);
     }
     catch (error) {
         throw new types_1.HiveError(`Invalid private key format: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
 }
 /**
- * Serialize transaction for signing (Hive binary format)
+ * Sign transaction using hive-tx library
  */
-function serializeTransaction(transaction) {
-    const buffer = [];
-    // Serialize ref_block_num (2 bytes, little endian)
-    const refBlockNum = transaction.ref_block_num & 0xFFFF;
-    buffer.push(refBlockNum & 0xFF, (refBlockNum >> 8) & 0xFF);
-    // Serialize ref_block_prefix (4 bytes, little endian)
-    const refBlockPrefix = transaction.ref_block_prefix;
-    buffer.push(refBlockPrefix & 0xFF, (refBlockPrefix >> 8) & 0xFF, (refBlockPrefix >> 16) & 0xFF, (refBlockPrefix >> 24) & 0xFF);
-    // Serialize expiration (4 bytes, seconds since epoch, little endian)
-    const expirationTime = Math.floor(new Date(transaction.expiration + 'Z').getTime() / 1000);
-    buffer.push(expirationTime & 0xFF, (expirationTime >> 8) & 0xFF, (expirationTime >> 16) & 0xFF, (expirationTime >> 24) & 0xFF);
-    // Serialize operations count (1 byte for small counts)
-    buffer.push(transaction.operations.length);
-    // Serialize each operation
-    for (const op of transaction.operations) {
-        const [opType, opData] = op;
-        // Operation type (1 byte for comment = 1)
-        if (opType === 'comment') {
-            buffer.push(1);
-            // Serialize comment operation data
-            const fields = [
-                opData.parent_author,
-                opData.parent_permlink,
-                opData.author,
-                opData.permlink,
-                opData.title,
-                opData.body,
-                opData.json_metadata
-            ];
-            for (const field of fields) {
-                const fieldBytes = new TextEncoder().encode(field);
-                buffer.push(fieldBytes.length);
-                buffer.push(...fieldBytes);
-            }
-        }
-    }
-    // Serialize extensions count (1 byte)
-    buffer.push(transaction.extensions.length);
-    return new Uint8Array(buffer);
-}
-/**
- * ECDSA signing for Hive transactions using secp256k1
- */
-async function signTransaction(transaction, privateKey) {
+function signTransaction(transaction, privateKey) {
     try {
-        // Serialize transaction
-        const serializedTx = serializeTransaction(transaction);
-        // Create hash for signing
-        const hash = await sha256(serializedTx);
-        // Sign with secp256k1
-        const signature = secp256k1.ecdsaSign(hash, privateKey);
-        // Format signature for Hive (compressed format)
-        const compressedSig = new Uint8Array(65);
-        compressedSig.set(signature.signature);
-        compressedSig[64] = signature.recid;
-        // Convert to hex string
-        return bytesToHex(compressedSig);
+        const signature = privateKey.sign(transaction);
+        return signature.toString();
     }
     catch (error) {
         throw new types_1.HiveError(`Transaction signing failed: ${error instanceof Error ? error.message : 'Unknown error'}`);

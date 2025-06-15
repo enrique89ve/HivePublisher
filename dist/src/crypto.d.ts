@@ -2,14 +2,15 @@
  * Cryptographic utilities for Hive blockchain
  * Extracted minimal functions from hivedb
  */
+import { PrivateKey } from 'hive-tx';
 /**
- * Parse WIF (Wallet Import Format) private key
+ * Parse WIF (Wallet Import Format) private key using hive-tx
  */
-export declare function parsePrivateKey(privateKeyWif: string): Uint8Array;
+export declare function parsePrivateKey(privateKeyWif: string): PrivateKey;
 /**
- * ECDSA signing for Hive transactions using secp256k1
+ * Sign transaction using hive-tx library
  */
-export declare function signTransaction(transaction: any, privateKey: Uint8Array): Promise<string>;
+export declare function signTransaction(transaction: any, privateKey: PrivateKey): string;
 /**
  * Generate transaction ID
  */
