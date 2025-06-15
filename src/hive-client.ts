@@ -11,6 +11,7 @@ export class HiveClient {
   private mainnet: boolean;
   private maxRetries: number;
   private currentNodeIndex: number = 0;
+  private nodeHealthStatus: Map<string, { healthy: boolean; lastCheck: number }> = new Map();
 
   constructor(config: HiveConfig = {}) {
     this.mainnet = config.mainnet !== false; // Default to mainnet
@@ -35,15 +36,18 @@ export class HiveClient {
 
   /**
    * Get default fallback nodes based on network configuration
+   * Optimized list based on WAX patterns and proven reliability
    */
   private getDefaultFallbackNodes(): string[] {
     if (this.mainnet) {
       return [
-        'https://rpc.mahdiyari.info',
-        'https://hived.emre.sh',
-        'https://api.deathwing.me',
-        'https://hive-api.arcange.eu',
-        'https://api.openhive.network'
+        'https://rpc.mahdiyari.info',        // High reliability, fast response
+        'https://hived.emre.sh',             // Community favorite
+        'https://api.deathwing.me',          // Stable endpoint
+        'https://hive-api.arcange.eu',       // European node
+        'https://api.openhive.network',      // Official backup
+        'https://anyx.io',                   // Additional reliability
+        'https://techcoderx.com'             // Community node
       ];
     } else {
       return [
@@ -209,6 +213,77 @@ export class HiveClient {
    */
   public getConfiguredNodes(): string[] {
     return this.getAllNodes();
+  }
+
+  /**
+   * Check node health with caching (WAX-inspired pattern)
+   */
+  private async checkNodeHealth(node: string): Promise<boolean> {
+    const cached = this.nodeHealthStatus.get(node);
+    const now = Date.now();
+    
+    // Use cached result if less than 30 seconds old
+    if (cached && (now - cached.lastCheck) < 30000) {
+      return cached.healthy;
+    }
+
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 5000); // Short timeout for health check
+
+      const response = await fetch(node, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'User-Agent': 'HiveTS/1.0.0'
+        },
+        body: JSON.stringify({
+          jsonrpc: '2.0',
+          method: 'condenser_api.get_dynamic_global_properties',
+          params: [],
+          id: 1
+        }),
+        signal: controller.signal
+      });
+
+      clearTimeout(timeoutId);
+      const healthy = response.ok;
+      
+      this.nodeHealthStatus.set(node, { healthy, lastCheck: now });
+      return healthy;
+    } catch (error) {
+      this.nodeHealthStatus.set(node, { healthy: false, lastCheck: now });
+      return false;
+    }
+  }
+
+  /**
+   * Get healthy nodes prioritized by current preference
+   */
+  public async getHealthyNodes(): Promise<string[]> {
+    const allNodes = this.getAllNodes();
+    const healthChecks = await Promise.all(
+      allNodes.map(async (node) => ({
+        node,
+        healthy: await this.checkNodeHealth(node)
+      }))
+    );
+
+    return healthChecks
+      .filter(check => check.healthy)
+      .map(check => check.node);
+  }
+
+  /**
+   * Get node health status for monitoring
+   */
+  public getNodeHealthStatus(): Record<string, { healthy: boolean; lastCheck: number }> {
+    const status: Record<string, { healthy: boolean; lastCheck: number }> = {};
+    for (const [node, health] of this.nodeHealthStatus.entries()) {
+      status[node] = { ...health };
+    }
+    return status;
   }
 
   /**

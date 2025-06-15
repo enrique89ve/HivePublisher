@@ -9,6 +9,7 @@ export declare class HiveClient {
     private mainnet;
     private maxRetries;
     private currentNodeIndex;
+    private nodeHealthStatus;
     constructor(config?: HiveConfig);
     /**
      * Get default primary API node based on network configuration
@@ -16,6 +17,7 @@ export declare class HiveClient {
     private getDefaultApiNode;
     /**
      * Get default fallback nodes based on network configuration
+     * Optimized list based on WAX patterns and proven reliability
      */
     private getDefaultFallbackNodes;
     /**
@@ -50,6 +52,21 @@ export declare class HiveClient {
      * Get all configured nodes
      */
     getConfiguredNodes(): string[];
+    /**
+     * Check node health with caching (WAX-inspired pattern)
+     */
+    private checkNodeHealth;
+    /**
+     * Get healthy nodes prioritized by current preference
+     */
+    getHealthyNodes(): Promise<string[]>;
+    /**
+     * Get node health status for monitoring
+     */
+    getNodeHealthStatus(): Record<string, {
+        healthy: boolean;
+        lastCheck: number;
+    }>;
     /**
      * Get dynamic global properties
      */

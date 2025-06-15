@@ -186,6 +186,7 @@ The `examples/` directory contains comprehensive usage demonstrations:
 - `custom-client.ts` - Advanced client configuration
 - `network-demo.ts` - Mainnet/testnet configuration
 - `node-failover-demo.ts` - API node failover and reliability
+- `wax-comparison-demo.ts` - Architecture comparison with WAX patterns
 - `comprehensive-demo.ts` - Complete library demonstration
 
 ## Development
