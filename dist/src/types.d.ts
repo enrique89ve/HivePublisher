@@ -2,12 +2,16 @@
  * TypeScript type definitions for Hive blockchain operations
  */
 export interface HiveConfig {
-    /** Hive API node endpoint */
+    /** Primary Hive API node endpoint */
     apiNode?: string;
+    /** List of fallback API nodes */
+    fallbackNodes?: string[];
     /** Request timeout in milliseconds */
     timeout?: number;
     /** Network mode - true for mainnet, false for testnet */
     mainnet?: boolean;
+    /** Maximum retry attempts for failed nodes */
+    maxRetries?: number;
 }
 export interface HiveCredentials {
     /** Hive username */

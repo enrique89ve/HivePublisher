@@ -6,24 +6,57 @@ import { HiveConfig, HiveResponse, DynamicGlobalProperties, HiveError } from './
 
 export class HiveClient {
   private apiNode: string;
+  private fallbackNodes: string[];
   private timeout: number;
   private mainnet: boolean;
+  private maxRetries: number;
+  private currentNodeIndex: number = 0;
 
   constructor(config: HiveConfig = {}) {
     this.mainnet = config.mainnet !== false; // Default to mainnet
-    this.apiNode = config.apiNode || this.getDefaultApiNode();
     this.timeout = config.timeout || 10000;
+    this.maxRetries = config.maxRetries || 3;
+    
+    // Set primary node and fallback list
+    this.apiNode = config.apiNode || this.getDefaultApiNode();
+    this.fallbackNodes = config.fallbackNodes || this.getDefaultFallbackNodes();
   }
 
   /**
-   * Get default API node based on network configuration
+   * Get default primary API node based on network configuration
    */
   private getDefaultApiNode(): string {
     if (this.mainnet) {
-      return 'https://rpc.mahdiyari.info'; // Mainnet
+      return 'https://api.hive.blog'; // Primary mainnet node
     } else {
-      return 'https://testnet.openhive.network'; // Testnet
+      return 'https://testnet.openhive.network'; // Primary testnet node
     }
+  }
+
+  /**
+   * Get default fallback nodes based on network configuration
+   */
+  private getDefaultFallbackNodes(): string[] {
+    if (this.mainnet) {
+      return [
+        'https://rpc.mahdiyari.info',
+        'https://hived.emre.sh',
+        'https://api.deathwing.me',
+        'https://hive-api.arcange.eu',
+        'https://api.openhive.network'
+      ];
+    } else {
+      return [
+        'https://testnet.openhive.network'
+      ];
+    }
+  }
+
+  /**
+   * Get all available nodes (primary + fallbacks)
+   */
+  private getAllNodes(): string[] {
+    return [this.apiNode, ...this.fallbackNodes];
   }
 
   /**
@@ -41,10 +74,51 @@ export class HiveClient {
   }
 
   /**
-   * Make RPC call to Hive API with proper error handling and request configuration
+   * Make RPC call with automatic node failover and retry logic
    */
   async call<T = any>(method: string, params: any = []): Promise<T> {
-    // Ensure consistent ID generation
+    const allNodes = this.getAllNodes();
+    let lastError: Error | null = null;
+
+    for (let attempt = 0; attempt < this.maxRetries; attempt++) {
+      for (let nodeIndex = 0; nodeIndex < allNodes.length; nodeIndex++) {
+        const currentNode = allNodes[(this.currentNodeIndex + nodeIndex) % allNodes.length];
+        
+        try {
+          const result = await this.makeRequest<T>(currentNode, method, params);
+          
+          // Success - update current node index for future calls
+          this.currentNodeIndex = (this.currentNodeIndex + nodeIndex) % allNodes.length;
+          
+          if (nodeIndex > 0 && process.env.NODE_ENV === 'development') {
+            console.log(`[HiveTS] Switched to node: ${currentNode}`);
+          }
+          
+          return result;
+        } catch (error) {
+          lastError = error as Error;
+          
+          if (process.env.NODE_ENV === 'development') {
+            console.log(`[HiveTS] Node ${currentNode} failed: ${lastError.message}`);
+          }
+          
+          // Continue to next node
+        }
+      }
+      
+      // All nodes failed for this attempt, wait before retrying
+      if (attempt < this.maxRetries - 1) {
+        await this.delay(1000 * (attempt + 1)); // Exponential backoff
+      }
+    }
+
+    throw new HiveError(`All nodes failed after ${this.maxRetries} attempts. Last error: ${lastError?.message || 'Unknown error'}`);
+  }
+
+  /**
+   * Make a single request to a specific node
+   */
+  private async makeRequest<T>(node: string, method: string, params: any = []): Promise<T> {
     const id = Math.floor(Math.random() * 1000000);
     
     const payload = {
@@ -58,7 +132,7 @@ export class HiveClient {
     const timeoutId = setTimeout(() => controller.abort(), this.timeout);
 
     try {
-      const response = await fetch(this.apiNode, {
+      const response = await fetch(node, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -114,6 +188,27 @@ export class HiveClient {
       
       throw new HiveError(`Network error: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
+  }
+
+  /**
+   * Delay utility for retry logic
+   */
+  private delay(ms: number): Promise<void> {
+    return new Promise(resolve => setTimeout(resolve, ms));
+  }
+
+  /**
+   * Get current active node information
+   */
+  public getCurrentNode(): string {
+    return this.getAllNodes()[this.currentNodeIndex];
+  }
+
+  /**
+   * Get all configured nodes
+   */
+  public getConfiguredNodes(): string[] {
+    return this.getAllNodes();
   }
 
   /**

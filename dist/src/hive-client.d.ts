@@ -4,13 +4,24 @@
 import { HiveConfig, DynamicGlobalProperties } from './types.js';
 export declare class HiveClient {
     private apiNode;
+    private fallbackNodes;
     private timeout;
     private mainnet;
+    private maxRetries;
+    private currentNodeIndex;
     constructor(config?: HiveConfig);
     /**
-     * Get default API node based on network configuration
+     * Get default primary API node based on network configuration
      */
     private getDefaultApiNode;
+    /**
+     * Get default fallback nodes based on network configuration
+     */
+    private getDefaultFallbackNodes;
+    /**
+     * Get all available nodes (primary + fallbacks)
+     */
+    private getAllNodes;
     /**
      * Check if client is configured for mainnet
      */
@@ -20,9 +31,25 @@ export declare class HiveClient {
      */
     getNetworkName(): string;
     /**
-     * Make RPC call to Hive API with proper error handling and request configuration
+     * Make RPC call with automatic node failover and retry logic
      */
     call<T = any>(method: string, params?: any): Promise<T>;
+    /**
+     * Make a single request to a specific node
+     */
+    private makeRequest;
+    /**
+     * Delay utility for retry logic
+     */
+    private delay;
+    /**
+     * Get current active node information
+     */
+    getCurrentNode(): string;
+    /**
+     * Get all configured nodes
+     */
+    getConfiguredNodes(): string[];
     /**
      * Get dynamic global properties
      */

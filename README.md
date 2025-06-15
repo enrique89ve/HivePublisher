@@ -100,15 +100,17 @@ Creates a new Hive API client with network awareness.
 **Configuration Options:**
 ```typescript
 {
-  apiNode?: string;    // Custom API endpoint (optional)
-  timeout?: number;    // Request timeout in ms (default: 10000)
-  mainnet?: boolean;   // Network mode: true=mainnet, false=testnet (default: true)
+  apiNode?: string;        // Primary API endpoint (default: api.hive.blog)
+  fallbackNodes?: string[]; // Backup API endpoints for failover
+  timeout?: number;        // Request timeout in ms (default: 10000)
+  mainnet?: boolean;       // Network mode: true=mainnet, false=testnet (default: true)
+  maxRetries?: number;     // Maximum retry attempts (default: 3)
 }
 ```
 
 **Network Configuration:**
 ```typescript
-// Production (mainnet) - default
+// Production (mainnet) - default with api.hive.blog
 const client = new HiveClient({ mainnet: true });
 
 // Development (testnet)
@@ -122,6 +124,36 @@ const client = new HiveClient({
 // Check network
 console.log(client.getNetworkName()); // 'mainnet' or 'testnet'
 console.log(client.isMainnet());      // true or false
+```
+
+**Node Failover Configuration:**
+```typescript
+// Default: api.hive.blog with automatic fallback
+const client = new HiveClient();
+
+// Custom primary node with fallbacks
+const client = new HiveClient({
+  apiNode: 'https://your-preferred-node.com',
+  fallbackNodes: [
+    'https://api.hive.blog',
+    'https://rpc.mahdiyari.info'
+  ]
+});
+
+// High-reliability setup
+const client = new HiveClient({
+  timeout: 8000,
+  maxRetries: 5,
+  fallbackNodes: [
+    'https://rpc.mahdiyari.info',
+    'https://hived.emre.sh',
+    'https://api.deathwing.me'
+  ]
+});
+
+// Monitor active node
+console.log(client.getCurrentNode());
+console.log(client.getConfiguredNodes());
 ```
 
 ## Error Handling
@@ -153,6 +185,7 @@ The `examples/` directory contains comprehensive usage demonstrations:
 - `error-handling.ts` - Error management patterns
 - `custom-client.ts` - Advanced client configuration
 - `network-demo.ts` - Mainnet/testnet configuration
+- `node-failover-demo.ts` - API node failover and reliability
 - `comprehensive-demo.ts` - Complete library demonstration
 
 ## Development
