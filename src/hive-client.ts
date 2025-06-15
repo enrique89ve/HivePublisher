@@ -9,7 +9,7 @@ export class HiveClient {
   private timeout: number;
 
   constructor(config: HiveConfig = {}) {
-    this.apiNode = config.apiNode || 'https://api.deathwing.me';
+    this.apiNode = config.apiNode || 'https://rpc.mahdiyari.info';
     this.timeout = config.timeout || 10000;
   }
 

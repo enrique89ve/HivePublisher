@@ -1,18 +1,16 @@
 /**
- * Hive blockchain account operations
- * Based on HAF SQL implementation for comprehensive account data
+ * Direct account information retrieval using proven API calls
  */
 
-import { HiveClient } from './hive-client.js';
 import { AccountInfo, HiveError } from './types.js';
 import { validateUsername } from './utils.js';
 
 /**
- * Get complete account information from Hive blockchain
+ * Get complete account information using direct fetch calls
  */
-export async function getAccountInfo(
+export async function getAccountInfoDirect(
   username: string,
-  client?: HiveClient
+  apiNode: string = 'https://rpc.mahdiyari.info'
 ): Promise<AccountInfo | null> {
   try {
     // Validate username format
@@ -20,9 +18,6 @@ export async function getAccountInfo(
       throw new HiveError('Invalid username format');
     }
 
-    // Use direct fetch implementation for reliable API calls
-    const apiNode = 'https://rpc.mahdiyari.info';
-    
     // Get account data using proven working format
     const accountPayload = {
       jsonrpc: '2.0',
@@ -152,7 +147,7 @@ export async function getAccountInfo(
 }
 
 /**
- * Parse JSON safely, returning null if invalid
+ * Parse JSON safely
  */
 function parseJsonSafely(jsonString: string): any {
   try {
@@ -163,7 +158,7 @@ function parseJsonSafely(jsonString: string): any {
 }
 
 /**
- * Parse Hive reputation from raw value using proper algorithm
+ * Parse Hive reputation from raw value
  */
 function parseReputation(rep: string | number): string {
   const reputation = typeof rep === 'string' ? parseInt(rep) : rep;
@@ -182,66 +177,30 @@ function parseReputation(rep: string | number): string {
 }
 
 /**
- * Format NAI asset object to traditional string format
- */
-function formatAssetAmount(asset: any, symbol?: string): string {
-  if (!asset) return `0.000${symbol ? ' ' + symbol : ' VESTS'}`;
-  
-  if (typeof asset === 'string') return asset;
-  
-  if (asset.amount && asset.precision !== undefined) {
-    const amount = parseFloat(asset.amount) / Math.pow(10, asset.precision);
-    
-    // Determine symbol from NAI
-    let assetSymbol = symbol;
-    if (!assetSymbol) {
-      switch (asset.nai) {
-        case '@@000000021': assetSymbol = 'HIVE'; break;
-        case '@@000000013': assetSymbol = 'HBD'; break;
-        case '@@000000037': assetSymbol = 'VESTS'; break;
-        default: assetSymbol = 'UNKNOWN';
-      }
-    }
-    
-    const precision = asset.precision;
-    return `${amount.toFixed(precision)} ${assetSymbol}`;
-  }
-  
-  return `0.000${symbol ? ' ' + symbol : ' VESTS'}`;
-}
-
-/**
- * Convert VESTS to HP using accurate global properties calculation
+ * Convert VESTS to HP using global properties
  */
 function convertVestsToHp(vests: string, globalProps: any): string {
   try {
     const vestsAmount = parseFloat(vests.split(' ')[0] || '0');
     if (vestsAmount === 0) return '0.000';
     
-    // Handle both NAI format and traditional format for global properties
-    let totalVestingFund = 0;
-    let totalVestingShares = 1;
-    
-    if (globalProps.total_vesting_fund_hive?.amount) {
-      totalVestingFund = parseFloat(globalProps.total_vesting_fund_hive.amount) / Math.pow(10, globalProps.total_vesting_fund_hive.precision);
-    } else if (globalProps.total_vesting_fund_hive) {
-      totalVestingFund = parseFloat(globalProps.total_vesting_fund_hive.split(' ')[0] || '0');
+    if (!globalProps) {
+      // Fallback calculation
+      const hp = vestsAmount / 2000;
+      return hp.toFixed(3);
     }
     
-    if (globalProps.total_vesting_shares?.amount) {
-      totalVestingShares = parseFloat(globalProps.total_vesting_shares.amount) / Math.pow(10, globalProps.total_vesting_shares.precision);
-    } else if (globalProps.total_vesting_shares) {
-      totalVestingShares = parseFloat(globalProps.total_vesting_shares.split(' ')[0] || '1');
-    }
+    const totalVestingFund = parseFloat(globalProps.total_vesting_fund_hive?.split(' ')[0] || '0');
+    const totalVestingShares = parseFloat(globalProps.total_vesting_shares?.split(' ')[0] || '1');
     
     if (totalVestingShares === 0) return '0.000';
     
     const hp = (vestsAmount * totalVestingFund) / totalVestingShares;
     return hp.toFixed(3);
   } catch (error) {
-    // Fallback calculation if global properties parsing fails
+    // Fallback calculation
     const vestsAmount = parseFloat(vests.split(' ')[0] || '0');
-    const hp = vestsAmount / 2000; // Approximate conversion
+    const hp = vestsAmount / 2000;
     return hp.toFixed(3);
   }
 }

@@ -4,7 +4,7 @@
 import { HiveError } from './types.js';
 export class HiveClient {
     constructor(config = {}) {
-        this.apiNode = config.apiNode || 'https://api.hive.blog';
+        this.apiNode = config.apiNode || 'https://rpc.mahdiyari.info';
         this.timeout = config.timeout || 10000;
     }
     /**
@@ -18,18 +18,16 @@ export class HiveClient {
             id: Date.now()
         };
         try {
-            console.log('DEBUG: Sending payload:', JSON.stringify(payload, null, 2));
             const response = await fetch(this.apiNode, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify(payload)
+                body: JSON.stringify(payload),
+                signal: AbortSignal.timeout(this.timeout)
             });
-            console.log('DEBUG: Response status:', response.status, response.ok);
             if (!response.ok) {
                 const errorText = await response.text();
-                console.log('DEBUG: Error response body:', errorText);
                 throw new HiveError(`HTTP ${response.status}: ${response.statusText} - ${errorText}`);
             }
             const data = await response.json();
