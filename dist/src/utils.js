@@ -34,14 +34,15 @@ function validateUsername(username) {
     }
     // Hive username rules:
     // - 3-16 characters
-    // - lowercase letters, numbers, hyphens
-    // - cannot start or end with hyphen
-    // - cannot have consecutive hyphens
-    const usernameRegex = /^[a-z][a-z0-9-]*[a-z0-9]$|^[a-z0-9]$/;
+    // - lowercase letters, numbers, hyphens, dots
+    // - cannot start or end with hyphen or dot
+    // - cannot have consecutive hyphens or dots
+    const usernameRegex = /^[a-z0-9][a-z0-9.-]*[a-z0-9]$|^[a-z0-9]$/;
     return username.length >= 3 &&
         username.length <= 16 &&
         usernameRegex.test(username) &&
-        !username.includes('--');
+        !username.includes('--') &&
+        !username.includes('..');
 }
 /**
  * Validate post tags

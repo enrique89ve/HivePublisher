@@ -7,8 +7,7 @@
  */
 export declare function parsePrivateKey(privateKeyWif: string): Uint8Array;
 /**
- * Simple ECDSA signing (placeholder implementation)
- * Note: This is a simplified version. In production, use a proper crypto library like secp256k1
+ * ECDSA signing for Hive transactions using secp256k1
  */
 export declare function signTransaction(transaction: any, privateKey: Uint8Array): Promise<string>;
 /**

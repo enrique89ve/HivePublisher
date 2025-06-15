@@ -3,10 +3,44 @@
  * Cryptographic utilities for Hive blockchain
  * Extracted minimal functions from hivedb
  */
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.parsePrivateKey = parsePrivateKey;
 exports.signTransaction = signTransaction;
 exports.generateTransactionId = generateTransactionId;
+const secp256k1 = __importStar(require("secp256k1"));
 const types_1 = require("./types");
 // Base58 alphabet used by Hive
 const BASE58_ALPHABET = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
@@ -130,24 +164,41 @@ function parsePrivateKey(privateKeyWif) {
     }
 }
 /**
- * Simple ECDSA signing (placeholder implementation)
- * Note: This is a simplified version. In production, use a proper crypto library like secp256k1
+ * Serialize transaction for signing (Hive format)
+ */
+function serializeTransaction(transaction) {
+    // This is a simplified serialization - in production you'd need proper binary serialization
+    const serialized = {
+        ref_block_num: transaction.ref_block_num,
+        ref_block_prefix: transaction.ref_block_prefix,
+        expiration: transaction.expiration,
+        operations: transaction.operations,
+        extensions: transaction.extensions
+    };
+    const serializedString = JSON.stringify(serialized);
+    return new TextEncoder().encode(serializedString);
+}
+/**
+ * ECDSA signing for Hive transactions using secp256k1
  */
 async function signTransaction(transaction, privateKey) {
-    // This is a placeholder implementation
-    // In a real implementation, you would:
-    // 1. Serialize the transaction properly
-    // 2. Create the signature hash
-    // 3. Sign with secp256k1
-    // 4. Return the signature in the correct format
-    const transactionString = JSON.stringify(transaction);
-    const messageBytes = new TextEncoder().encode(transactionString);
-    // Import the private key for signing
-    const keyMaterial = await crypto.subtle.importKey('raw', privateKey, { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
-    // Sign the message
-    const signature = await crypto.subtle.sign('HMAC', keyMaterial, messageBytes);
-    // Convert to hex and return (this is simplified)
-    return bytesToHex(new Uint8Array(signature));
+    try {
+        // Serialize transaction
+        const serializedTx = serializeTransaction(transaction);
+        // Create hash for signing
+        const hash = await sha256(serializedTx);
+        // Sign with secp256k1
+        const signature = secp256k1.ecdsaSign(hash, privateKey);
+        // Format signature for Hive (compressed format)
+        const compressedSig = new Uint8Array(65);
+        compressedSig.set(signature.signature);
+        compressedSig[64] = signature.recid;
+        // Convert to hex string
+        return bytesToHex(compressedSig);
+    }
+    catch (error) {
+        throw new types_1.HiveError(`Transaction signing failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
 }
 /**
  * Generate transaction ID

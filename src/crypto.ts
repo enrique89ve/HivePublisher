@@ -3,6 +3,7 @@
  * Extracted minimal functions from hivedb
  */
 
+import * as secp256k1 from 'secp256k1';
 import { HiveError } from './types';
 
 // Base58 alphabet used by Hive
@@ -143,34 +144,46 @@ export function parsePrivateKey(privateKeyWif: string): Uint8Array {
 }
 
 /**
- * Simple ECDSA signing (placeholder implementation)
- * Note: This is a simplified version. In production, use a proper crypto library like secp256k1
+ * Serialize transaction for signing (Hive format)
+ */
+function serializeTransaction(transaction: any): Uint8Array {
+  // This is a simplified serialization - in production you'd need proper binary serialization
+  const serialized = {
+    ref_block_num: transaction.ref_block_num,
+    ref_block_prefix: transaction.ref_block_prefix,
+    expiration: transaction.expiration,
+    operations: transaction.operations,
+    extensions: transaction.extensions
+  };
+  
+  const serializedString = JSON.stringify(serialized);
+  return new TextEncoder().encode(serializedString);
+}
+
+/**
+ * ECDSA signing for Hive transactions using secp256k1
  */
 export async function signTransaction(transaction: any, privateKey: Uint8Array): Promise<string> {
-  // This is a placeholder implementation
-  // In a real implementation, you would:
-  // 1. Serialize the transaction properly
-  // 2. Create the signature hash
-  // 3. Sign with secp256k1
-  // 4. Return the signature in the correct format
-  
-  const transactionString = JSON.stringify(transaction);
-  const messageBytes = new TextEncoder().encode(transactionString);
-  
-  // Import the private key for signing
-  const keyMaterial = await crypto.subtle.importKey(
-    'raw',
-    privateKey,
-    { name: 'HMAC', hash: 'SHA-256' },
-    false,
-    ['sign']
-  );
-  
-  // Sign the message
-  const signature = await crypto.subtle.sign('HMAC', keyMaterial, messageBytes);
-  
-  // Convert to hex and return (this is simplified)
-  return bytesToHex(new Uint8Array(signature));
+  try {
+    // Serialize transaction
+    const serializedTx = serializeTransaction(transaction);
+    
+    // Create hash for signing
+    const hash = await sha256(serializedTx);
+    
+    // Sign with secp256k1
+    const signature = secp256k1.ecdsaSign(hash, privateKey);
+    
+    // Format signature for Hive (compressed format)
+    const compressedSig = new Uint8Array(65);
+    compressedSig.set(signature.signature);
+    compressedSig[64] = signature.recid;
+    
+    // Convert to hex string
+    return bytesToHex(compressedSig);
+  } catch (error) {
+    throw new HiveError(`Transaction signing failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+  }
 }
 
 /**

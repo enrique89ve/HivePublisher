@@ -201,24 +201,20 @@ async function runExamples() {
   await exampleErrorHandling();
   console.log('');
 
-  // Uncomment these examples if you have valid credentials:
-  /*
-  // Create a post
-  const transactionId = await exampleCreatePost();
-  console.log('');
-
-  // Edit the post (if creation was successful)
-  if (transactionId) {
-    // Note: In practice, you'd extract the permlink from the post creation
-    // For this example, we'd need to generate or know the permlink
-    console.log('💡 To edit the post, you would need the permlink from the created post.');
+  // Test with real credentials if available
+  if (process.env.HIVE_USERNAME && process.env.HIVE_POSTING_KEY) {
+    console.log('🔑 Real credentials detected. Testing with live Hive blockchain...\n');
+    
+    // Create a post
+    const transactionId = await exampleCreatePost();
     console.log('');
-  }
 
-  // Test custom client
-  await exampleCustomClient();
-  console.log('');
-  */
+    // Test custom client
+    await exampleCustomClient();
+    console.log('');
+  } else {
+    console.log('⚠️ No real credentials provided. Skipping live blockchain tests.\n');
+  }
 
   console.log('🏁 Examples completed!');
 }
