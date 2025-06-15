@@ -156,21 +156,21 @@ function parseJsonSafely(jsonString) {
     }
 }
 /**
- * Parse Hive reputation from raw value using proper algorithm
+ * Parse Hive reputation from raw value using correct Hive algorithm
  */
 function parseReputation(rep) {
-    const reputation = typeof rep === 'string' ? parseInt(rep) : rep;
+    let reputation = typeof rep === 'string' ? parseInt(rep) : rep;
     if (reputation === 0)
         return '25.00';
-    const neg = reputation < 0;
-    let reputationLevel = Math.log10(Math.abs(reputation));
-    reputationLevel = Math.max(reputationLevel - 9, 0);
-    if (reputationLevel < 0)
-        reputationLevel = 0;
-    if (neg)
-        reputationLevel *= -1;
-    reputationLevel = reputationLevel * 9 + 25;
-    return reputationLevel.toFixed(2);
+    const isNegative = reputation < 0;
+    reputation = Math.abs(reputation);
+    // Hive reputation formula: log10(reputation) - 9) * 9 + 25
+    let score = Math.log10(reputation);
+    score = Math.max(score - 9, 0) * 9 + 25;
+    if (isNegative) {
+        score = 50 - score;
+    }
+    return Math.max(0, score).toFixed(2);
 }
 /**
  * Format NAI asset object to traditional string format

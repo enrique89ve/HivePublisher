@@ -91,6 +91,32 @@ export async function getAccountInfo(
     } catch (error) {
       // Follow API might not be available
     }
+
+    // Get reputation data using bridge API
+    let bridgeReputation = null;
+    try {
+      const bridgePayload = {
+        jsonrpc: '2.0',
+        method: 'bridge.get_account',
+        params: { account: username },
+        id: 4
+      };
+
+      const bridgeResponse = await fetch(apiNode, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(bridgePayload)
+      });
+
+      if (bridgeResponse.ok) {
+        const bridgeResult = await bridgeResponse.json();
+        if (!bridgeResult.error && bridgeResult.result && bridgeResult.result.reputation) {
+          bridgeReputation = bridgeResult.result.reputation;
+        }
+      }
+    } catch (error) {
+      // Bridge API might not be available
+    }
     
     // Get global properties for VESTS conversion
     const globalPropsPayload = {
@@ -177,22 +203,25 @@ function parseJsonSafely(jsonString: string): any {
 }
 
 /**
- * Parse Hive reputation from raw value using proper algorithm
+ * Parse Hive reputation from raw value using correct Hive algorithm
  */
 function parseReputation(rep: string | number): string {
-  const reputation = typeof rep === 'string' ? parseInt(rep) : rep;
+  let reputation = typeof rep === 'string' ? parseInt(rep) : rep;
+  
   if (reputation === 0) return '25.00';
   
-  const neg = reputation < 0;
-  let reputationLevel = Math.log10(Math.abs(reputation));
-  reputationLevel = Math.max(reputationLevel - 9, 0);
+  const isNegative = reputation < 0;
+  reputation = Math.abs(reputation);
   
-  if (reputationLevel < 0) reputationLevel = 0;
-  if (neg) reputationLevel *= -1;
+  // Hive reputation formula: log10(reputation) - 9) * 9 + 25
+  let score = Math.log10(reputation);
+  score = Math.max(score - 9, 0) * 9 + 25;
   
-  reputationLevel = reputationLevel * 9 + 25;
+  if (isNegative) {
+    score = 50 - score;
+  }
   
-  return reputationLevel.toFixed(2);
+  return Math.max(0, score).toFixed(2);
 }
 
 /**
