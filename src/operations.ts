@@ -9,7 +9,7 @@ import {
   PostOperation, 
   PublishResult, 
   VoteResult,
-  HiveError 
+  HiveError
 } from './types.js';
 import { parsePrivateKey } from './crypto.js';
 import { generatePermlink, validateUsername, validateTags } from './utils.js';

@@ -168,6 +168,80 @@ export interface AccountInfo {
   pending_hbd_savings_withdrawal: any;
 }
 
+/**
+ * Complete post content from Hive blockchain
+ */
+export interface PostContent {
+  id: number;
+  author: string;
+  permlink: string;
+  title: string;
+  body: string;
+  category: string;
+  parent_author: string;
+  parent_permlink: string;
+  json_metadata: Record<string, any>;
+  created: string;
+  last_update: string;
+  depth: number;
+  children: number;
+  net_rshares: string;
+  abs_rshares: string;
+  vote_rshares: string;
+  children_abs_rshares: string;
+  cashout_time: string;
+  max_cashout_time: string;
+  total_vote_weight: string;
+  reward_weight: number;
+  total_payout_value: string;
+  curator_payout_value: string;
+  author_rewards: number;
+  net_votes: number;
+  root_comment: number;
+  max_accepted_payout: string;
+  percent_hbd: number;
+  allow_replies: boolean;
+  allow_votes: boolean;
+  allow_curation_rewards: boolean;
+  beneficiaries: any[];
+  url: string;
+  root_title: string;
+  pending_payout_value: string;
+  total_pending_payout_value: string;
+  active_votes: any[];
+  replies: any[];
+  author_reputation: string;
+  promoted: string;
+  body_length: number;
+  reblogged_by: string[];
+}
+
+/**
+ * Comment data structure
+ */
+export interface CommentData {
+  id: number;
+  author: string;
+  permlink: string;
+  parent_author: string;
+  parent_permlink: string;
+  title: string;
+  body: string;
+  json_metadata: Record<string, any>;
+  created: string;
+  last_update: string;
+  depth: number;
+  children: number;
+  net_votes: number;
+  total_payout_value: string;
+  pending_payout_value: string;
+  author_reputation: string;
+  active_votes: any[];
+  replies: any[];
+  cashout_time: string;
+  url: string;
+}
+
 export class HiveError extends Error {
   constructor(
     message: string,
