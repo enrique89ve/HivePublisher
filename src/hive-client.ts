@@ -7,10 +7,37 @@ import { HiveConfig, HiveResponse, DynamicGlobalProperties, HiveError } from './
 export class HiveClient {
   private apiNode: string;
   private timeout: number;
+  private mainnet: boolean;
 
   constructor(config: HiveConfig = {}) {
-    this.apiNode = config.apiNode || 'https://rpc.mahdiyari.info';
+    this.mainnet = config.mainnet !== false; // Default to mainnet
+    this.apiNode = config.apiNode || this.getDefaultApiNode();
     this.timeout = config.timeout || 10000;
+  }
+
+  /**
+   * Get default API node based on network configuration
+   */
+  private getDefaultApiNode(): string {
+    if (this.mainnet) {
+      return 'https://rpc.mahdiyari.info'; // Mainnet
+    } else {
+      return 'https://testnet.openhive.network'; // Testnet
+    }
+  }
+
+  /**
+   * Check if client is configured for mainnet
+   */
+  public isMainnet(): boolean {
+    return this.mainnet;
+  }
+
+  /**
+   * Get current network name
+   */
+  public getNetworkName(): string {
+    return this.mainnet ? 'mainnet' : 'testnet';
   }
 
   /**

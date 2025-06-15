@@ -6,6 +6,8 @@ export interface HiveConfig {
     apiNode?: string;
     /** Request timeout in milliseconds */
     timeout?: number;
+    /** Network mode - true for mainnet, false for testnet */
+    mainnet?: boolean;
 }
 export interface HiveCredentials {
     /** Hive username */

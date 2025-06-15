@@ -5,7 +5,20 @@ import { HiveConfig, DynamicGlobalProperties } from './types.js';
 export declare class HiveClient {
     private apiNode;
     private timeout;
+    private mainnet;
     constructor(config?: HiveConfig);
+    /**
+     * Get default API node based on network configuration
+     */
+    private getDefaultApiNode;
+    /**
+     * Check if client is configured for mainnet
+     */
+    isMainnet(): boolean;
+    /**
+     * Get current network name
+     */
+    getNetworkName(): string;
     /**
      * Make RPC call to Hive API with proper error handling and request configuration
      */

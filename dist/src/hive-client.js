@@ -4,8 +4,32 @@
 import { HiveError } from './types.js';
 export class HiveClient {
     constructor(config = {}) {
-        this.apiNode = config.apiNode || 'https://rpc.mahdiyari.info';
+        this.mainnet = config.mainnet !== false; // Default to mainnet
+        this.apiNode = config.apiNode || this.getDefaultApiNode();
         this.timeout = config.timeout || 10000;
+    }
+    /**
+     * Get default API node based on network configuration
+     */
+    getDefaultApiNode() {
+        if (this.mainnet) {
+            return 'https://rpc.mahdiyari.info'; // Mainnet
+        }
+        else {
+            return 'https://testnet.openhive.network'; // Testnet
+        }
+    }
+    /**
+     * Check if client is configured for mainnet
+     */
+    isMainnet() {
+        return this.mainnet;
+    }
+    /**
+     * Get current network name
+     */
+    getNetworkName() {
+        return this.mainnet ? 'mainnet' : 'testnet';
     }
     /**
      * Make RPC call to Hive API with proper error handling and request configuration

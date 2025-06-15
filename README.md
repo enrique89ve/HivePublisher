@@ -95,14 +95,33 @@ Votes on a post or comment with specified weight percentage.
 
 #### `new HiveClient(config?)`
 
-Creates a new Hive API client.
+Creates a new Hive API client with network awareness.
 
 **Configuration Options:**
 ```typescript
 {
-  apiNode?: string;    // Default: 'https://rpc.mahdiyari.info'
-  timeout?: number;    // Default: 10000ms
+  apiNode?: string;    // Custom API endpoint (optional)
+  timeout?: number;    // Request timeout in ms (default: 10000)
+  mainnet?: boolean;   // Network mode: true=mainnet, false=testnet (default: true)
 }
+```
+
+**Network Configuration:**
+```typescript
+// Production (mainnet) - default
+const client = new HiveClient({ mainnet: true });
+
+// Development (testnet)
+const client = new HiveClient({ mainnet: false });
+
+// Environment-based
+const client = new HiveClient({ 
+  mainnet: process.env.NODE_ENV === 'production' 
+});
+
+// Check network
+console.log(client.getNetworkName()); // 'mainnet' or 'testnet'
+console.log(client.isMainnet());      // true or false
 ```
 
 ## Error Handling
@@ -133,6 +152,8 @@ The `examples/` directory contains comprehensive usage demonstrations:
 - `upvote-post.ts` - Voting on content
 - `error-handling.ts` - Error management patterns
 - `custom-client.ts` - Advanced client configuration
+- `network-demo.ts` - Mainnet/testnet configuration
+- `comprehensive-demo.ts` - Complete library demonstration
 
 ## Development
 
