@@ -18,7 +18,9 @@ export async function createPost(credentials, metadata, client) {
         if (!validateTags(metadata.tags)) {
             throw new HiveError('Invalid tags: maximum 5 tags allowed, each tag must be lowercase and contain only letters, numbers, and hyphens');
         }
-        if (!metadata.title.trim()) {
+        // Only validate title for root posts (not comments)
+        const isComment = metadata.parent_author && metadata.parent_permlink;
+        if (!isComment && !metadata.title.trim()) {
             throw new HiveError('Title cannot be empty');
         }
         if (!metadata.body.trim()) {
