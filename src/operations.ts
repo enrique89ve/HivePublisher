@@ -83,9 +83,12 @@ export async function createPost(
     await tx.create([commentOperation]);
     const signedTransaction = tx.sign(privateKey);
 
+    // Get transaction digest for ID
+    const { txId } = tx.digest();
+
     // Broadcast transaction
     const result = await hiveClient.broadcastTransaction(signedTransaction);
-    const transactionId = result.id || result.tx_id;
+    const transactionId = txId || result.id || result.tx_id;
 
     return {
       success: true,
@@ -180,9 +183,12 @@ export async function editPost(
     await tx.create([editOperation]);
     const signedTransaction = tx.sign(privateKey);
 
+    // Get transaction digest for ID
+    const { txId } = tx.digest();
+
     // Broadcast transaction
     const result = await hiveClient.broadcastTransaction(signedTransaction);
-    const transactionId = result.id || result.tx_id;
+    const transactionId = txId || result.id || result.tx_id;
 
     return {
       success: true,
