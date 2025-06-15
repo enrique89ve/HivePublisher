@@ -7,12 +7,10 @@ import {
   HiveCredentials, 
   PostMetadata, 
   PostOperation, 
-  Transaction, 
   PublishResult, 
   HiveError 
 } from './types';
 import { parsePrivateKey } from './crypto';
-import { Transaction } from 'hive-tx';
 import { generatePermlink, validateUsername, validateTags } from './utils';
 
 /**
@@ -77,6 +75,9 @@ export async function createPost(
     // Parse private key
     const privateKey = parsePrivateKey(credentials.postingKey);
 
+    // Dynamic import for ES module compatibility
+    const { Transaction } = await import('hive-tx');
+    
     // Create and sign transaction using hive-tx Transaction class
     const tx = new Transaction();
     await tx.create([commentOperation]);
@@ -154,27 +155,34 @@ export async function editPost(
       json_metadata: JSON.stringify(jsonMetadata)
     };
 
-    // Get dynamic global properties for transaction reference
-    const props = await hiveClient.getDynamicGlobalProperties();
-    
-    // Create transaction
-    const transaction: Transaction = {
-      ref_block_num: props.head_block_number & 0xFFFF,
-      ref_block_prefix: parseInt(props.head_block_id.substring(8, 16), 16),
-      expiration: new Date(Date.now() + 60000).toISOString().split('.')[0]!, // 1 minute from now
-      operations: [['comment', editOp]],
-      extensions: [],
-      signatures: []
-    };
+    // Create edit operation for hive-tx
+    const editOperation = [
+      'comment',
+      {
+        parent_author: existingPost.parent_author,
+        parent_permlink: existingPost.parent_permlink,
+        author: credentials.username,
+        permlink,
+        title: metadata.title,
+        body: metadata.body,
+        json_metadata: JSON.stringify(jsonMetadata)
+      }
+    ];
 
-    // Parse private key and sign transaction
+    // Parse private key
     const privateKey = parsePrivateKey(credentials.postingKey);
-    const signature = await signTransaction(transaction, privateKey);
-    transaction.signatures = [signature];
+
+    // Dynamic import for ES module compatibility
+    const { Transaction } = await import('hive-tx');
+    
+    // Create and sign transaction using hive-tx Transaction class
+    const tx = new Transaction();
+    await tx.create([editOperation]);
+    const signedTransaction = tx.sign(privateKey);
 
     // Broadcast transaction
-    const result = await hiveClient.broadcastTransaction(transaction);
-    const transactionId = await generateTransactionId(transaction);
+    const result = await hiveClient.broadcastTransaction(signedTransaction);
+    const transactionId = result.id || result.tx_id;
 
     return {
       success: true,

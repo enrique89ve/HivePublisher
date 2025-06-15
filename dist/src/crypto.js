@@ -1,14 +1,9 @@
-"use strict";
 /**
  * Cryptographic utilities for Hive blockchain
  * Extracted minimal functions from hivedb
  */
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.parsePrivateKey = parsePrivateKey;
-exports.signTransaction = signTransaction;
-exports.generateTransactionId = generateTransactionId;
-const hive_tx_1 = require("hive-tx");
-const types_1 = require("./types");
+import { PrivateKey } from 'hive-tx';
+import { HiveError } from './types';
 // Base58 alphabet used by Hive
 const BASE58_ALPHABET = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
 /**
@@ -44,7 +39,7 @@ function ripemd160(data) {
     // This is a simplified placeholder - in production you'd want a proper RIPEMD160 implementation
     // For now, we'll use a double SHA256 as a substitute
     // In a real implementation, you should use a proper crypto library
-    throw new types_1.HiveError('RIPEMD160 not implemented - use proper crypto library');
+    throw new HiveError('RIPEMD160 not implemented - use proper crypto library');
 }
 /**
  * Base58 encoding
@@ -84,7 +79,7 @@ function base58Decode(str) {
         const char = str[i];
         const value = BASE58_ALPHABET.indexOf(char);
         if (value === -1) {
-            throw new types_1.HiveError(`Invalid character in base58 string: ${char}`);
+            throw new HiveError(`Invalid character in base58 string: ${char}`);
         }
         let carry = value;
         for (let j = 0; j < bytes.length; j++) {
@@ -114,30 +109,30 @@ function base58Decode(str) {
 /**
  * Parse WIF (Wallet Import Format) private key using hive-tx
  */
-function parsePrivateKey(privateKeyWif) {
+export function parsePrivateKey(privateKeyWif) {
     try {
-        return hive_tx_1.PrivateKey.from(privateKeyWif);
+        return PrivateKey.from(privateKeyWif);
     }
     catch (error) {
-        throw new types_1.HiveError(`Invalid private key format: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        throw new HiveError(`Invalid private key format: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
 }
 /**
  * Sign transaction using hive-tx library
  */
-function signTransaction(transaction, privateKey) {
+export function signTransaction(transaction, privateKey) {
     try {
         const signature = privateKey.sign(transaction);
         return signature.toString();
     }
     catch (error) {
-        throw new types_1.HiveError(`Transaction signing failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        throw new HiveError(`Transaction signing failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
 }
 /**
  * Generate transaction ID
  */
-async function generateTransactionId(transaction) {
+export async function generateTransactionId(transaction) {
     const transactionString = JSON.stringify(transaction);
     const bytes = new TextEncoder().encode(transactionString);
     const hash = await sha256(bytes);

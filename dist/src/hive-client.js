@@ -1,11 +1,8 @@
-"use strict";
 /**
  * Main Hive client for blockchain communication
  */
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.HiveClient = void 0;
-const types_1 = require("./types");
-class HiveClient {
+import { HiveError } from './types';
+export class HiveClient {
     constructor(config = {}) {
         this.apiNode = config.apiNode || 'https://api.hive.blog';
         this.timeout = config.timeout || 10000;
@@ -30,19 +27,19 @@ class HiveClient {
                 signal: AbortSignal.timeout(this.timeout)
             });
             if (!response.ok) {
-                throw new types_1.HiveError(`HTTP ${response.status}: ${response.statusText}`);
+                throw new HiveError(`HTTP ${response.status}: ${response.statusText}`);
             }
             const data = await response.json();
             if (data.error) {
-                throw new types_1.HiveError(data.error.message, data.error.code, data.error.data);
+                throw new HiveError(data.error.message, data.error.code, data.error.data);
             }
             return data.result;
         }
         catch (error) {
-            if (error instanceof types_1.HiveError) {
+            if (error instanceof HiveError) {
                 throw error;
             }
-            throw new types_1.HiveError(`Network error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+            throw new HiveError(`Network error: ${error instanceof Error ? error.message : 'Unknown error'}`);
         }
     }
     /**
@@ -71,5 +68,4 @@ class HiveClient {
         return this.call('condenser_api.get_content', [author, permlink]);
     }
 }
-exports.HiveClient = HiveClient;
 //# sourceMappingURL=hive-client.js.map
