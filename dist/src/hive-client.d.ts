@@ -27,6 +27,10 @@ export declare class HiveClient {
      */
     getContent(author: string, permlink: string): Promise<any>;
     /**
+     * Get follow count for an account
+     */
+    getFollowCount(username: string): Promise<any>;
+    /**
      * Get detailed account information
      */
     getAccountInfo(username: string): Promise<any>;

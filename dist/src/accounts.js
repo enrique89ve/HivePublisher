@@ -14,33 +14,32 @@ export async function getAccountInfo(username, client) {
         if (!validateUsername(username)) {
             throw new HiveError('Invalid username format');
         }
-        // Get account data from Hive API
-        const accounts = await hiveClient.getAccountInfo(username);
-        if (!accounts || accounts.length === 0) {
+        // Get account data from Hive API using existing getAccount method
+        const account = await hiveClient.getAccount(username);
+        if (!account) {
             return null; // Account not found
         }
-        const account = accounts[0];
         // Map the response to our AccountInfo interface
         const accountInfo = {
-            id: account.id,
-            name: account.name,
-            block_num: account.block_num || 0,
+            id: account.id || 0,
+            name: account.name || username,
+            block_num: 0, // Not available in basic account data
             last_vote_time: account.last_vote_time || '',
             last_root_post: account.last_root_post || '',
             last_post: account.last_post || '',
             total_posts: account.post_count?.toString() || '0',
-            followers: account.follower_count?.toString() || '0',
-            followings: account.following_count?.toString() || '0',
+            followers: '0', // Requires separate API call
+            followings: '0', // Requires separate API call  
             reputation: parseReputation(account.reputation || '0'),
-            incoming_vests: account.delegated_vesting_shares || '0.000000 VESTS',
-            incoming_hp: convertVestsToHp(account.delegated_vesting_shares || '0.000000 VESTS'),
-            outgoing_vests: account.vesting_shares || '0.000000 VESTS',
-            outgoing_hp: convertVestsToHp(account.vesting_shares || '0.000000 VESTS'),
+            incoming_vests: account.received_vesting_shares || '0.000000 VESTS',
+            incoming_hp: convertVestsToHp(account.received_vesting_shares || '0.000000 VESTS'),
+            outgoing_vests: account.delegated_vesting_shares || '0.000000 VESTS',
+            outgoing_hp: convertVestsToHp(account.delegated_vesting_shares || '0.000000 VESTS'),
             creator: account.creator || '',
             created_at: account.created || '',
-            owner: account.owner,
-            active: account.active,
-            posting: account.posting,
+            owner: account.owner || { key_auths: [], account_auths: [], weight_threshold: 1 },
+            active: account.active || { key_auths: [], account_auths: [], weight_threshold: 1 },
+            posting: account.posting || { key_auths: [], account_auths: [], weight_threshold: 1 },
             memo_key: account.memo_key || '',
             json_metadata: parseJsonSafely(account.json_metadata) || {},
             posting_metadata: parseJsonSafely(account.posting_json_metadata) || { profile: {} },

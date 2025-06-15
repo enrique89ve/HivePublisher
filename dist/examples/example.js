@@ -1,7 +1,7 @@
 /**
  * Example usage of HiveTS library
  */
-import { createPost, editPost, HiveClient } from '../src/index.js';
+import { createPost, editPost, getAccountInfo, HiveClient } from '../src/index.js';
 // Example function to demonstrate creating a post
 async function exampleCreatePost() {
     console.log('🚀 Creating a new post...');
@@ -169,6 +169,33 @@ async function exampleErrorHandling() {
     }
     catch (error) {
         console.log('✅ Exception correctly thrown:', error instanceof Error ? error.message : 'Unknown error');
+    }
+}
+// Example function to demonstrate getting account information
+async function exampleGetAccountInfo() {
+    console.log('📊 Getting account information...');
+    try {
+        const accountInfo = await getAccountInfo('mahdiyari');
+        if (accountInfo) {
+            console.log(`✅ Account found: @${accountInfo.name}`);
+            console.log(`📅 Created: ${accountInfo.created_at}`);
+            console.log(`👥 Followers: ${accountInfo.followers}`);
+            console.log(`📝 Total posts: ${accountInfo.total_posts}`);
+            console.log(`⭐ Reputation: ${accountInfo.reputation}`);
+            console.log(`💰 HIVE balance: ${accountInfo.reward_hive_balance}`);
+            if (accountInfo.posting_metadata.profile) {
+                const profile = accountInfo.posting_metadata.profile;
+                console.log(`🏷️ Name: ${profile.name || 'Not set'}`);
+                console.log(`🌐 Website: ${profile.website || 'Not set'}`);
+                console.log(`📍 Location: ${profile.location || 'Not set'}`);
+            }
+        }
+        else {
+            console.log('❌ Account not found');
+        }
+    }
+    catch (error) {
+        console.error(`❌ Failed to get account info: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
 }
 // Main example runner

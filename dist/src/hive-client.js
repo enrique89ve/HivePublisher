@@ -68,6 +68,18 @@ export class HiveClient {
         return this.call('condenser_api.get_content', [author, permlink]);
     }
     /**
+     * Get follow count for an account
+     */
+    async getFollowCount(username) {
+        try {
+            return await this.call('follow_api.get_follow_count', [username]);
+        }
+        catch (error) {
+            // Follow API might not be available on all nodes
+            return { follower_count: 0, following_count: 0 };
+        }
+    }
+    /**
      * Get detailed account information
      */
     async getAccountInfo(username) {
