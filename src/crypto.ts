@@ -4,7 +4,7 @@
  */
 
 import { PrivateKey } from 'hive-tx';
-import { HiveError } from './types';
+import { HiveError } from './types.js';
 
 // Base58 alphabet used by Hive
 const BASE58_ALPHABET = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';

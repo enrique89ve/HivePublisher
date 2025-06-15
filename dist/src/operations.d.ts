@@ -1,8 +1,8 @@
 /**
  * Hive blockchain operations for posts
  */
-import { HiveClient } from './hive-client';
-import { HiveCredentials, PostMetadata, PublishResult } from './types';
+import { HiveClient } from './hive-client.js';
+import { HiveCredentials, PostMetadata, PublishResult } from './types.js';
 /**
  * Create and publish a new post to Hive blockchain
  */

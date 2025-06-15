@@ -2,7 +2,7 @@
  * Main Hive client for blockchain communication
  */
 
-import { HiveConfig, HiveResponse, DynamicGlobalProperties, HiveError } from './types';
+import { HiveConfig, HiveResponse, DynamicGlobalProperties, HiveError } from './types.js';
 
 export class HiveClient {
   private apiNode: string;

@@ -2,16 +2,16 @@
  * Hive blockchain operations for posts
  */
 
-import { HiveClient } from './hive-client';
+import { HiveClient } from './hive-client.js';
 import { 
   HiveCredentials, 
   PostMetadata, 
   PostOperation, 
   PublishResult, 
   HiveError 
-} from './types';
-import { parsePrivateKey } from './crypto';
-import { generatePermlink, validateUsername, validateTags } from './utils';
+} from './types.js';
+import { parsePrivateKey } from './crypto.js';
+import { generatePermlink, validateUsername, validateTags } from './utils.js';
 
 /**
  * Create and publish a new post to Hive blockchain

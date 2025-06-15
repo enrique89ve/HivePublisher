@@ -1,7 +1,7 @@
 /**
  * Example usage of HiveTS library
  */
-import { createPost, editPost, HiveClient } from '../src';
+import { createPost, editPost, HiveClient } from '../src/index.js';
 // Example function to demonstrate creating a post
 async function exampleCreatePost() {
     console.log('🚀 Creating a new post...');
@@ -198,7 +198,7 @@ async function runExamples() {
     console.log('🏁 Examples completed!');
 }
 // Run examples if this file is executed directly
-if (require.main === module) {
+if (import.meta.url === `file://${process.argv[1]}`) {
     runExamples().catch(console.error);
 }
 export { exampleCreatePost, exampleEditPost, exampleCustomClient, exampleErrorHandling, runExamples };

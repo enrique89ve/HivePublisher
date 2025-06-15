@@ -1,7 +1,7 @@
 /**
  * Main Hive client for blockchain communication
  */
-import { HiveConfig, DynamicGlobalProperties } from './types';
+import { HiveConfig, DynamicGlobalProperties } from './types.js';
 export declare class HiveClient {
     private apiNode;
     private timeout;

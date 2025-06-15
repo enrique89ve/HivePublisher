@@ -2,7 +2,7 @@
  * Example usage of HiveTS library
  */
 
-import { createPost, editPost, HiveClient, HiveCredentials, PostMetadata } from '../src';
+import { createPost, editPost, HiveClient, HiveCredentials, PostMetadata } from '../src/index.js';
 
 // Example function to demonstrate creating a post
 async function exampleCreatePost() {
@@ -220,7 +220,7 @@ async function runExamples() {
 }
 
 // Run examples if this file is executed directly
-if (require.main === module) {
+if (import.meta.url === `file://${process.argv[1]}`) {
   runExamples().catch(console.error);
 }
 
