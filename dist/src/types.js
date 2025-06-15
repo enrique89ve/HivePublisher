@@ -1,7 +1,10 @@
+"use strict";
 /**
  * TypeScript type definitions for Hive blockchain operations
  */
-export class HiveError extends Error {
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.HiveError = void 0;
+class HiveError extends Error {
     constructor(message, code, data) {
         super(message);
         this.code = code;
@@ -9,4 +12,5 @@ export class HiveError extends Error {
         this.name = 'HiveError';
     }
 }
+exports.HiveError = HiveError;
 //# sourceMappingURL=types.js.map

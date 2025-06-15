@@ -1,8 +1,13 @@
+"use strict";
 /**
  * Cryptographic utilities for Hive blockchain
  * Extracted minimal functions from hivedb
  */
-import { HiveError } from './types';
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.parsePrivateKey = parsePrivateKey;
+exports.signTransaction = signTransaction;
+exports.generateTransactionId = generateTransactionId;
+const types_1 = require("./types");
 // Base58 alphabet used by Hive
 const BASE58_ALPHABET = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
 /**
@@ -38,7 +43,7 @@ function ripemd160(data) {
     // This is a simplified placeholder - in production you'd want a proper RIPEMD160 implementation
     // For now, we'll use a double SHA256 as a substitute
     // In a real implementation, you should use a proper crypto library
-    throw new HiveError('RIPEMD160 not implemented - use proper crypto library');
+    throw new types_1.HiveError('RIPEMD160 not implemented - use proper crypto library');
 }
 /**
  * Base58 encoding
@@ -78,7 +83,7 @@ function base58Decode(str) {
         const char = str[i];
         const value = BASE58_ALPHABET.indexOf(char);
         if (value === -1) {
-            throw new HiveError(`Invalid character in base58 string: ${char}`);
+            throw new types_1.HiveError(`Invalid character in base58 string: ${char}`);
         }
         let carry = value;
         for (let j = 0; j < bytes.length; j++) {
@@ -108,11 +113,11 @@ function base58Decode(str) {
 /**
  * Parse WIF (Wallet Import Format) private key
  */
-export function parsePrivateKey(privateKeyWif) {
+function parsePrivateKey(privateKeyWif) {
     try {
         const decoded = base58Decode(privateKeyWif);
         if (decoded.length !== 37) {
-            throw new HiveError('Invalid private key length');
+            throw new types_1.HiveError('Invalid private key length');
         }
         // Extract the 32-byte private key (excluding version byte and checksum)
         const privateKey = decoded.slice(1, 33);
@@ -121,14 +126,14 @@ export function parsePrivateKey(privateKeyWif) {
         return privateKey;
     }
     catch (error) {
-        throw new HiveError(`Invalid private key format: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        throw new types_1.HiveError(`Invalid private key format: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
 }
 /**
  * Simple ECDSA signing (placeholder implementation)
  * Note: This is a simplified version. In production, use a proper crypto library like secp256k1
  */
-export async function signTransaction(transaction, privateKey) {
+async function signTransaction(transaction, privateKey) {
     // This is a placeholder implementation
     // In a real implementation, you would:
     // 1. Serialize the transaction properly
@@ -147,7 +152,7 @@ export async function signTransaction(transaction, privateKey) {
 /**
  * Generate transaction ID
  */
-export async function generateTransactionId(transaction) {
+async function generateTransactionId(transaction) {
     const transactionString = JSON.stringify(transaction);
     const bytes = new TextEncoder().encode(transactionString);
     const hash = await sha256(bytes);

@@ -1,7 +1,14 @@
+"use strict";
 /**
  * Example usage of HiveTS library
  */
-import { createPost, editPost, HiveClient } from '../src';
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.exampleCreatePost = exampleCreatePost;
+exports.exampleEditPost = exampleEditPost;
+exports.exampleCustomClient = exampleCustomClient;
+exports.exampleErrorHandling = exampleErrorHandling;
+exports.runExamples = runExamples;
+const src_1 = require("../src");
 // Example function to demonstrate creating a post
 async function exampleCreatePost() {
     console.log('🚀 Creating a new post...');
@@ -43,7 +50,7 @@ Happy posting! 🎉
         tags: ['hivets', 'typescript', 'programming', 'blockchain', 'tutorial']
     };
     try {
-        const result = await createPost(credentials, postData);
+        const result = await (0, src_1.createPost)(credentials, postData);
         if (result.success) {
             console.log('✅ Post created successfully!');
             console.log('📄 Transaction ID:', result.transaction_id);
@@ -104,7 +111,7 @@ Happy posting and editing! 🎉✨
         tags: ['hivets', 'typescript', 'programming', 'blockchain', 'update']
     };
     try {
-        const result = await editPost(credentials, permlink, updatedPostData);
+        const result = await (0, src_1.editPost)(credentials, permlink, updatedPostData);
         if (result.success) {
             console.log('✅ Post edited successfully!');
             console.log('📄 Transaction ID:', result.transaction_id);
@@ -121,7 +128,7 @@ Happy posting and editing! 🎉✨
 async function exampleCustomClient() {
     console.log('🔧 Using custom Hive client...');
     // Create a custom client with different API node
-    const customClient = new HiveClient({
+    const customClient = new src_1.HiveClient({
         apiNode: 'https://anyx.io',
         timeout: 15000 // 15 second timeout
     });
@@ -135,7 +142,7 @@ async function exampleCustomClient() {
         tags: ['hivets', 'testing']
     };
     try {
-        const result = await createPost(credentials, postData, customClient);
+        const result = await (0, src_1.createPost)(credentials, postData, customClient);
         if (result.success) {
             console.log('✅ Post created with custom client!');
             console.log('📄 Transaction ID:', result.transaction_id);
@@ -162,7 +169,7 @@ async function exampleErrorHandling() {
         tags: [] // Invalid empty tags
     };
     try {
-        const result = await createPost(invalidCredentials, postData);
+        const result = await (0, src_1.createPost)(invalidCredentials, postData);
         if (!result.success) {
             console.log('✅ Error correctly caught:', result.error);
         }
@@ -206,5 +213,4 @@ async function runExamples() {
 if (require.main === module) {
     runExamples().catch(console.error);
 }
-export { exampleCreatePost, exampleEditPost, exampleCustomClient, exampleErrorHandling, runExamples };
 //# sourceMappingURL=example.js.map

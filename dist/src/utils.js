@@ -1,10 +1,20 @@
+"use strict";
 /**
  * Utility functions for Hive operations
  */
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.generatePermlink = generatePermlink;
+exports.validateUsername = validateUsername;
+exports.validateTags = validateTags;
+exports.formatHiveDate = formatHiveDate;
+exports.parseHiveDate = parseHiveDate;
+exports.sanitizeBody = sanitizeBody;
+exports.calculateReadingTime = calculateReadingTime;
+exports.extractExcerpt = extractExcerpt;
 /**
  * Generate a URL-friendly permlink from a title
  */
-export function generatePermlink(title) {
+function generatePermlink(title) {
     const timestamp = Math.floor(Date.now() / 1000);
     return title
         .toLowerCase()
@@ -18,7 +28,7 @@ export function generatePermlink(title) {
 /**
  * Validate Hive username format
  */
-export function validateUsername(username) {
+function validateUsername(username) {
     if (!username || typeof username !== 'string') {
         return false;
     }
@@ -36,7 +46,7 @@ export function validateUsername(username) {
 /**
  * Validate post tags
  */
-export function validateTags(tags) {
+function validateTags(tags) {
     if (!Array.isArray(tags)) {
         return false;
     }
@@ -66,19 +76,19 @@ export function validateTags(tags) {
 /**
  * Format date for Hive blockchain
  */
-export function formatHiveDate(date) {
+function formatHiveDate(date) {
     return date.toISOString().split('.')[0];
 }
 /**
  * Parse Hive date string
  */
-export function parseHiveDate(dateString) {
+function parseHiveDate(dateString) {
     return new Date(dateString + 'Z');
 }
 /**
  * Sanitize post body content
  */
-export function sanitizeBody(body) {
+function sanitizeBody(body) {
     if (!body || typeof body !== 'string') {
         return '';
     }
@@ -92,7 +102,7 @@ export function sanitizeBody(body) {
 /**
  * Calculate approximate reading time
  */
-export function calculateReadingTime(text) {
+function calculateReadingTime(text) {
     const wordsPerMinute = 200;
     const words = text.trim().split(/\s+/).length;
     return Math.ceil(words / wordsPerMinute);
@@ -100,7 +110,7 @@ export function calculateReadingTime(text) {
 /**
  * Extract excerpt from post body
  */
-export function extractExcerpt(body, maxLength = 200) {
+function extractExcerpt(body, maxLength = 200) {
     if (!body || typeof body !== 'string') {
         return '';
     }

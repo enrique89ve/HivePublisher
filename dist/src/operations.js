@@ -1,35 +1,39 @@
+"use strict";
 /**
  * Hive blockchain operations for posts
  */
-import { HiveClient } from './hive-client';
-import { HiveError } from './types';
-import { parsePrivateKey, signTransaction, generateTransactionId } from './crypto';
-import { generatePermlink, validateUsername, validateTags } from './utils';
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.createPost = createPost;
+exports.editPost = editPost;
+const hive_client_1 = require("./hive-client");
+const types_1 = require("./types");
+const crypto_1 = require("./crypto");
+const utils_1 = require("./utils");
 /**
  * Create and publish a new post to Hive blockchain
  */
-export async function createPost(credentials, metadata, client) {
+async function createPost(credentials, metadata, client) {
     try {
-        const hiveClient = client || new HiveClient();
+        const hiveClient = client || new hive_client_1.HiveClient();
         // Validate input
-        if (!validateUsername(credentials.username)) {
-            throw new HiveError('Invalid username format');
+        if (!(0, utils_1.validateUsername)(credentials.username)) {
+            throw new types_1.HiveError('Invalid username format');
         }
-        if (!validateTags(metadata.tags)) {
-            throw new HiveError('Invalid tags: maximum 5 tags allowed, each tag must be lowercase and contain only letters, numbers, and hyphens');
+        if (!(0, utils_1.validateTags)(metadata.tags)) {
+            throw new types_1.HiveError('Invalid tags: maximum 5 tags allowed, each tag must be lowercase and contain only letters, numbers, and hyphens');
         }
         if (!metadata.title.trim()) {
-            throw new HiveError('Title cannot be empty');
+            throw new types_1.HiveError('Title cannot be empty');
         }
         if (!metadata.body.trim()) {
-            throw new HiveError('Body cannot be empty');
+            throw new types_1.HiveError('Body cannot be empty');
         }
         // Generate permlink if not provided
-        const permlink = generatePermlink(metadata.title);
+        const permlink = (0, utils_1.generatePermlink)(metadata.title);
         // Check if account exists
         const account = await hiveClient.getAccount(credentials.username);
         if (!account) {
-            throw new HiveError(`Account ${credentials.username} not found`);
+            throw new types_1.HiveError(`Account ${credentials.username} not found`);
         }
         // Prepare JSON metadata
         const jsonMetadata = {
@@ -60,12 +64,12 @@ export async function createPost(credentials, metadata, client) {
             signatures: []
         };
         // Parse private key and sign transaction
-        const privateKey = parsePrivateKey(credentials.postingKey);
-        const signature = await signTransaction(transaction, privateKey);
+        const privateKey = (0, crypto_1.parsePrivateKey)(credentials.postingKey);
+        const signature = await (0, crypto_1.signTransaction)(transaction, privateKey);
         transaction.signatures = [signature];
         // Broadcast transaction
         const result = await hiveClient.broadcastTransaction(transaction);
-        const transactionId = await generateTransactionId(transaction);
+        const transactionId = await (0, crypto_1.generateTransactionId)(transaction);
         return {
             success: true,
             transaction_id: transactionId
@@ -74,34 +78,34 @@ export async function createPost(credentials, metadata, client) {
     catch (error) {
         return {
             success: false,
-            error: error instanceof HiveError ? error.message : `Unexpected error: ${error instanceof Error ? error.message : 'Unknown error'}`
+            error: error instanceof types_1.HiveError ? error.message : `Unexpected error: ${error instanceof Error ? error.message : 'Unknown error'}`
         };
     }
 }
 /**
  * Edit an existing post on Hive blockchain
  */
-export async function editPost(credentials, permlink, metadata, client) {
+async function editPost(credentials, permlink, metadata, client) {
     try {
-        const hiveClient = client || new HiveClient();
+        const hiveClient = client || new hive_client_1.HiveClient();
         // Validate input
-        if (!validateUsername(credentials.username)) {
-            throw new HiveError('Invalid username format');
+        if (!(0, utils_1.validateUsername)(credentials.username)) {
+            throw new types_1.HiveError('Invalid username format');
         }
         if (!permlink.trim()) {
-            throw new HiveError('Permlink cannot be empty');
+            throw new types_1.HiveError('Permlink cannot be empty');
         }
-        if (!validateTags(metadata.tags)) {
-            throw new HiveError('Invalid tags: maximum 5 tags allowed, each tag must be lowercase and contain only letters, numbers, and hyphens');
+        if (!(0, utils_1.validateTags)(metadata.tags)) {
+            throw new types_1.HiveError('Invalid tags: maximum 5 tags allowed, each tag must be lowercase and contain only letters, numbers, and hyphens');
         }
         // Check if post exists
         const existingPost = await hiveClient.getContent(credentials.username, permlink);
         if (!existingPost || !existingPost.author) {
-            throw new HiveError(`Post not found: @${credentials.username}/${permlink}`);
+            throw new types_1.HiveError(`Post not found: @${credentials.username}/${permlink}`);
         }
         // Check if user is the author
         if (existingPost.author !== credentials.username) {
-            throw new HiveError('You can only edit your own posts');
+            throw new types_1.HiveError('You can only edit your own posts');
         }
         // Prepare JSON metadata
         const jsonMetadata = {
@@ -132,12 +136,12 @@ export async function editPost(credentials, permlink, metadata, client) {
             signatures: []
         };
         // Parse private key and sign transaction
-        const privateKey = parsePrivateKey(credentials.postingKey);
-        const signature = await signTransaction(transaction, privateKey);
+        const privateKey = (0, crypto_1.parsePrivateKey)(credentials.postingKey);
+        const signature = await (0, crypto_1.signTransaction)(transaction, privateKey);
         transaction.signatures = [signature];
         // Broadcast transaction
         const result = await hiveClient.broadcastTransaction(transaction);
-        const transactionId = await generateTransactionId(transaction);
+        const transactionId = await (0, crypto_1.generateTransactionId)(transaction);
         return {
             success: true,
             transaction_id: transactionId
@@ -146,7 +150,7 @@ export async function editPost(credentials, permlink, metadata, client) {
     catch (error) {
         return {
             success: false,
-            error: error instanceof HiveError ? error.message : `Unexpected error: ${error instanceof Error ? error.message : 'Unknown error'}`
+            error: error instanceof types_1.HiveError ? error.message : `Unexpected error: ${error instanceof Error ? error.message : 'Unknown error'}`
         };
     }
 }
