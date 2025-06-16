@@ -24,6 +24,10 @@ args = "hive_library_test"
 task = "workflow.run"
 args = "HiveTS Library Demo"
 
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "Hive API Server"
+
 [[workflows.workflow]]
 name = "TypeScript Build and Example"
 author = "agent"
@@ -48,5 +52,18 @@ author = "agent"
 task = "shell.exec"
 args = "npm install && npx tsc && node dist/examples/example.js"
 
+[[workflows.workflow]]
+name = "Hive API Server"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "npm install && npx tsc && node dist/examples/api-server-runner.js"
+waitForPort = 3000
+
 [deployment]
 run = ["sh", "-c", "npm install typescript @types/node && npx tsc && node dist/examples/example.js"]
+
+[[ports]]
+localPort = 3000
+externalPort = 80
