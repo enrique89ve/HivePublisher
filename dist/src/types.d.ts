@@ -45,6 +45,10 @@ export interface PostMetadata {
     body: string;
     /** Post tags */
     tags: string[];
+    /** Post description for SEO */
+    description?: string;
+    /** Featured image URL */
+    image?: string;
     /** Additional metadata */
     json_metadata?: Record<string, any>;
     /** Parent author (for comments/replies) */
@@ -86,6 +90,7 @@ export interface HiveResponse<T = any> {
 export interface PublishResult {
     success: boolean;
     transaction_id?: string;
+    permlink?: string;
     error?: string;
 }
 export interface VoteResult {
