@@ -148,8 +148,14 @@ class HiveClient {
         }
         let lastError = null;
         for (let attempt = 0; attempt < this.maxRetries; attempt++) {
-            // Elite Pattern: Smart node selection with load balancing
-            const selectedNode = this.selectOptimalNode(availableNodes);
+            // Select node: primary for first attempt, optimal balancing thereafter
+            let selectedNode;
+            if (attempt === 0) {
+                selectedNode = this.apiNode;
+            }
+            else {
+                selectedNode = this.selectOptimalNode(availableNodes);
+            }
             try {
                 const result = await this.makeRequestWithCircuitBreaker(selectedNode, method, params);
                 // Update metrics and cache
