@@ -3,17 +3,18 @@
  */
 
 import { HiveClient } from './hive-client.js';
+import { createConfigFromEnv } from './config.js';
 import { HiveError, PostContent, CommentData } from './types.js';
 import { validateUsername } from './utils.js';
 
 /**
  * Get complete post content from Hive blockchain
- * 
+ *
  * @param author - Username of the post author
  * @param permlink - Unique identifier of the post
  * @param client - Optional HiveClient instance for custom configuration
  * @returns Promise resolving to PostContent object or null if post not found
- * 
+ *
  * @example
  * ```typescript
  * const post = await getPostContent('alice', 'my-first-post');
@@ -30,24 +31,24 @@ export async function getPostContent(
   client?: HiveClient
 ): Promise<PostContent | null> {
   try {
-    const hiveClient = client || new HiveClient();
-    
+    const hiveClient = client || new HiveClient(createConfigFromEnv());
+
     // Validate input parameters
     if (!validateUsername(author)) {
       throw new HiveError('Invalid author username format');
     }
-    
+
     if (!permlink || permlink.trim().length === 0) {
       throw new HiveError('Permlink cannot be empty');
     }
-    
+
     // Get post content using condenser API
     const content = await hiveClient.getContent(author, permlink);
-    
+
     if (!content || !content.author) {
       return null;
     }
-    
+
     // Parse JSON metadata safely
     let jsonMetadata = {};
     try {
@@ -59,7 +60,7 @@ export async function getPostContent(
     } catch (error) {
       // Invalid JSON metadata, use empty object
     }
-    
+
     // Format the post content
     const postContent: PostContent = {
       id: content.id || 0,
@@ -68,62 +69,54 @@ export async function getPostContent(
       title: content.title || '',
       body: content.body || '',
       category: content.category || '',
-      parent_author: content.parent_author || '',
-      parent_permlink: content.parent_permlink || '',
-      json_metadata: jsonMetadata,
-      created: content.created || '',
-      last_update: content.last_update || '',
+      json_metadata: typeof jsonMetadata === 'string' ? jsonMetadata : JSON.stringify(jsonMetadata),
+      // Optional posting metadata from blockchain, if available
+      posting_metadata: content.posting_metadata
+        ? JSON.stringify(content.posting_metadata)
+        : undefined,
+      // Normalize timestamps to full ISO format with milliseconds and Z
+      created: content.created
+        ? new Date(content.created + (content.created.endsWith('Z') ? '' : 'Z')).toISOString()
+        : '',
+      last_update: content.last_update
+        ? new Date(
+            content.last_update + (content.last_update.endsWith('Z') ? '' : 'Z')
+          ).toISOString()
+        : '',
       depth: content.depth || 0,
       children: content.children || 0,
-      net_rshares: content.net_rshares || '0',
-      abs_rshares: content.abs_rshares || '0',
-      vote_rshares: content.vote_rshares || '0',
-      children_abs_rshares: content.children_abs_rshares || '0',
-      cashout_time: content.cashout_time || '',
-      max_cashout_time: content.max_cashout_time || '',
-      total_vote_weight: content.total_vote_weight || '0',
-      reward_weight: content.reward_weight || 10000,
+      net_votes: content.net_votes || 0,
+      pending_payout_value: content.pending_payout_value || '0.000 HBD',
       total_payout_value: content.total_payout_value || '0.000 HBD',
       curator_payout_value: content.curator_payout_value || '0.000 HBD',
-      author_rewards: content.author_rewards || 0,
-      net_votes: content.net_votes || 0,
-      root_comment: content.root_comment || content.id || 0,
-      max_accepted_payout: content.max_accepted_payout || '1000000.000 HBD',
-      percent_hbd: content.percent_hbd || 10000,
-      allow_replies: content.allow_replies !== false,
-      allow_votes: content.allow_votes !== false,
-      allow_curation_rewards: content.allow_curation_rewards !== false,
-      beneficiaries: content.beneficiaries || [],
+      active: content.active || 'active',
+      parent_author: content.parent_author || '',
+      parent_permlink: content.parent_permlink || '',
       url: content.url || `/@${author}/${permlink}`,
       root_title: content.root_title || content.title || '',
-      pending_payout_value: content.pending_payout_value || '0.000 HBD',
-      total_pending_payout_value: content.total_pending_payout_value || '0.000 HBD',
+      beneficiaries: content.beneficiaries || [],
       active_votes: content.active_votes || [],
-      replies: content.replies || [],
-      author_reputation: content.author_reputation || '0',
-      promoted: content.promoted || '0.000 HBD',
-      body_length: content.body_length || 0,
-      reblogged_by: content.reblogged_by || []
     };
-    
+
     return postContent;
-    
   } catch (error) {
     if (error instanceof HiveError) {
       throw error;
     }
-    throw new HiveError(`Failed to get post content: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    throw new HiveError(
+      `Failed to get post content: ${error instanceof Error ? error.message : 'Unknown error'}`
+    );
   }
 }
 
 /**
  * Get comments for a specific post from Hive blockchain
- * 
+ *
  * @param author - Username of the post author
  * @param permlink - Unique identifier of the post
  * @param client - Optional HiveClient instance for custom configuration
  * @returns Promise resolving to array of CommentData objects
- * 
+ *
  * @example
  * ```typescript
  * const comments = await getComments('alice', 'my-first-post');
@@ -139,24 +132,24 @@ export async function getComments(
   client?: HiveClient
 ): Promise<CommentData[]> {
   try {
-    const hiveClient = client || new HiveClient();
-    
+    const hiveClient = client || new HiveClient(createConfigFromEnv());
+
     // Validate input parameters
     if (!validateUsername(author)) {
       throw new HiveError('Invalid author username format');
     }
-    
+
     if (!permlink || permlink.trim().length === 0) {
       throw new HiveError('Permlink cannot be empty');
     }
-    
+
     // Get content replies using condenser API
     const replies = await hiveClient.call('condenser_api.get_content_replies', [author, permlink]);
-    
+
     if (!Array.isArray(replies)) {
       return [];
     }
-    
+
     // Process and format comments
     const comments: CommentData[] = replies.map((reply: any) => {
       // Parse JSON metadata safely
@@ -170,40 +163,85 @@ export async function getComments(
       } catch (error) {
         // Invalid JSON metadata, use empty object
       }
-      
+
       return {
         id: reply.id || 0,
         author: reply.author || '',
         permlink: reply.permlink || '',
-        parent_author: reply.parent_author || '',
-        parent_permlink: reply.parent_permlink || '',
-        title: reply.title || '',
         body: reply.body || '',
-        json_metadata: jsonMetadata,
+        json_metadata:
+          typeof jsonMetadata === 'string' ? jsonMetadata : JSON.stringify(jsonMetadata),
         created: reply.created || '',
         last_update: reply.last_update || '',
         depth: reply.depth || 0,
         children: reply.children || 0,
         net_votes: reply.net_votes || 0,
-        total_payout_value: reply.total_payout_value || '0.000 HBD',
         pending_payout_value: reply.pending_payout_value || '0.000 HBD',
-        author_reputation: reply.author_reputation || '0',
+        total_payout_value: reply.total_payout_value || '0.000 HBD',
+        parent_author: reply.parent_author || '',
+        parent_permlink: reply.parent_permlink || '',
+        url: reply.url || `/@${reply.author}/${reply.permlink}`,
+        root_author: reply.root_author || '',
+        root_permlink: reply.root_permlink || '',
+        root_title: reply.root_title || '',
         active_votes: reply.active_votes || [],
-        replies: reply.replies || [],
-        cashout_time: reply.cashout_time || '',
-        url: reply.url || `/@${reply.author}/${reply.permlink}`
       };
     });
-    
+
     // Sort comments by creation time (newest first)
     comments.sort((a, b) => new Date(b.created).getTime() - new Date(a.created).getTime());
-    
+
     return comments;
-    
   } catch (error) {
     if (error instanceof HiveError) {
       throw error;
     }
-    throw new HiveError(`Failed to get comments: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    throw new HiveError(
+      `Failed to get comments: ${error instanceof Error ? error.message : 'Unknown error'}`
+    );
+  }
+}
+
+/**
+ * Check if a post exists on Hive blockchain
+ *
+ * @param author - Username of the post author
+ * @param permlink - Unique identifier of the post
+ * @param client - Optional HiveClient instance for custom configuration
+ * @returns Promise resolving to true if post exists, false otherwise
+ *
+ * @example
+ * ```typescript
+ * const exists = await postExists('alice', 'my-post-permlink');
+ * if (exists) {
+ *   console.log('Post already exists!');
+ * }
+ * ```
+ */
+export async function postExists(
+  author: string,
+  permlink: string,
+  client?: HiveClient
+): Promise<boolean> {
+  try {
+    const hiveClient = client || new HiveClient(createConfigFromEnv());
+
+    // Validate input parameters
+    if (!validateUsername(author)) {
+      throw new HiveError('Invalid author username format');
+    }
+
+    if (!permlink || permlink.trim().length === 0) {
+      throw new HiveError('Permlink cannot be empty');
+    }
+
+    // Try to get post content - if it exists, the call will return data
+    const content = await hiveClient.getContent(author, permlink);
+
+    // Post exists if content has an author (non-empty response)
+    return !!(content && content.author);
+  } catch (error) {
+    // If there's an error (like post not found), it doesn't exist
+    return false;
   }
 }

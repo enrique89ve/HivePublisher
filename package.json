@@ -1,7 +1,16 @@
 {
-  "name": "hivets",
-  "version": "1.0.0",
-  "description": "A lightweight, enterprise-ready TypeScript library for Hive blockchain operations. Built with modern architecture for maximum reliability and developer experience.",
+  "name": "hive-publisher",
+  "version": "1.1.0",
+  "description": "A ultra-simple, enterprise-ready TypeScript library for Hive blockchain operations. Works out-of-the-box with just 'new HiveClient()' - no configuration needed!",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/enrique89ve/hive-publisher.git"
+  },
+  "bugs": {
+    "url": "https://github.com/enrique89ve/hive-publisher/issues"
+  },
+  "homepage": "https://github.com/enrique89ve/hive-publisher#readme",
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
   "types": "./dist/index.d.ts",
@@ -22,6 +31,7 @@
     "lib": "dist"
   },
   "scripts": {
+    "sandbox": "npm run build && node sandbox/test-extract.js",
     "build": "node scripts/build.js",
     "build:cjs": "tsc -p tsconfig.cjs.json",
     "build:esm": "tsc -p tsconfig.esm.json",
@@ -32,13 +42,13 @@
     "test:coverage": "jest --coverage",
     "lint": "eslint src/**/*.ts",
     "lint:fix": "eslint src/**/*.ts --fix",
-    "format": "prettier --write \"src/**/*.ts\" \"examples/**/*.ts\"",
-    "format:check": "prettier --check \"src/**/*.ts\" \"examples/**/*.ts\"",
-    "prepublishOnly": "npm run build && npm test",
-    "examples": "npm run build && node examples/run-all.js",
+    "format": "prettier --write \"src/**/*.ts\" \"examples/**/*.js\"",
+    "format:check": "prettier --check \"src/**/*.ts\" \"examples/**/*.js\"",
+    "prepublishOnly": "npm run build",
     "docs": "typedoc src/index.ts --out docs",
     "validate": "npm run lint && npm run format:check && npm test",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "check-config": "node scripts/check-config.js"
   },
   "keywords": [
     "hive",
@@ -50,31 +60,21 @@
     "social",
     "content",
     "publishing",
-    "voting",
-    "steem"
+    "voting"
   ],
-  "author": "HiveTS Contributors",
-  "license": "MIT",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/hivets/hivets.git"
-  },
-  "bugs": {
-    "url": "https://github.com/hivets/hivets/issues"
-  },
-  "homepage": "https://github.com/hivets/hivets#readme",
   "engines": {
     "node": ">=16.0.0",
     "npm": ">=8.0.0"
   },
   "dependencies": {
     "hive-tx": "^6.1.3",
-    "secp256k1": "^5.0.1"
+    "speakingurl": "^14.0.1"
   },
   "devDependencies": {
+    "dotenv": "^16.5.0",
     "@types/jest": "^29.5.0",
     "@types/node": "^20.19.1",
-    "@types/secp256k1": "^4.0.6",
+    "@types/speakingurl": "^13.0.6",
     "@typescript-eslint/eslint-plugin": "^6.0.0",
     "@typescript-eslint/parser": "^6.0.0",
     "eslint": "^8.0.0",
@@ -86,13 +86,5 @@
     "ts-jest": "^29.1.0",
     "typedoc": "^0.25.0",
     "typescript": "^5.8.3"
-  },
-  "peerDependencies": {
-    "express": "^5.0.0"
-  },
-  "peerDependenciesMeta": {
-    "express": {
-      "optional": true
-    }
   }
 }

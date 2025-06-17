@@ -69,8 +69,7 @@ pnpm-lock.yaml
 
 # Development files
 .replit
-.github/
-.npmignore
+.config/
 
 # Examples output (if any)
 examples/output/

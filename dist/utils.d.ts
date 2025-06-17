@@ -1,10 +1,7 @@
 /**
- * Utility functions for Hive operations
+ * Generate a URL-friendly permlink from a title following Ecency's approach
  */
-/**
- * Generate a URL-friendly permlink from a title
- */
-export declare function generatePermlink(title: string): string;
+export declare function generatePermlink(title: string, random?: boolean): string;
 /**
  * Validate Hive username format
  */

@@ -1,0 +1,18 @@
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "module": "commonjs",
+    "allowJs": true,
+    "checkJs": true,
+    "moduleResolution": "node",
+    "baseUrl": ".",
+    "paths": {
+      "hive-publisher": ["dist"]
+    }
+  },
+  "include": [
+    "sandbox/**/*.js",
+    "src/**/*.ts",
+    "*.js"
+  ]
+}

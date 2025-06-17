@@ -4,279 +4,146 @@
  */
 
 import { HiveClient } from './hive-client.js';
+import { createConfigFromEnv } from './config.js';
 import { AccountInfo, HiveError } from './types.js';
 import { validateUsername } from './utils.js';
 
 /**
  * Get complete account information from Hive blockchain
- * 
+ * Optimized with WAX-inspired best practices for maximum performance
+ *
  * @param username - Hive username to retrieve information for
  * @param client - Optional HiveClient instance for custom configuration
  * @returns Promise resolving to AccountInfo object or null if account not found
- * 
+ *
  * @example
  * ```typescript
+ * // Single account (fastest - uses individual client per call)
  * const account = await getAccountInfo('alice');
- * if (account) {
- *   console.log(`Reputation: ${account.reputation}`);
- *   console.log(`Posts: ${account.total_posts}`);
- *   console.log(`Followers: ${account.followers}`);
- * }
+ *
+ * // Multiple accounts with shared client (for sequential calls)
+ * const client = new HiveClient();
+ * const alice = await getAccountInfo('alice', client);
+ * const bob = await getAccountInfo('bob', client);
+ * await client.shutdown();
+ *
+ * // Multiple accounts in parallel (fastest for batch)
+ * const accounts = await Promise.all([
+ *   getAccountInfo('alice'),
+ *   getAccountInfo('bob'),
+ *   getAccountInfo('charlie')
+ * ]);
  * ```
  */
 export async function getAccountInfo(
   username: string,
   client?: HiveClient
 ): Promise<AccountInfo | null> {
+  // Validate username format
+  if (!validateUsername(username)) {
+    throw new HiveError('Invalid username format');
+  }
+
+  // Use provided client or create a new one with environment configuration
+  const envConfig = createConfigFromEnv();
+  const hiveClient = client || new HiveClient(envConfig);
+  const shouldCleanup = !client; // Only cleanup if we created the client
+
   try {
-    // Validate username format
-    if (!validateUsername(username)) {
-      throw new HiveError('Invalid username format');
+    // WAX-inspired optimization: Parallel API calls with intelligent fallbacks
+    // Each call has specific error handling to maximize data recovery
+    const results = await Promise.allSettled([
+      hiveClient.call('condenser_api.get_accounts', [[username]]),
+      hiveClient.call('condenser_api.get_follow_count', [username]),
+      hiveClient.call('condenser_api.get_dynamic_global_properties', []),
+      hiveClient.call('follow_api.get_account_reputations', {
+        account_lower_bound: username,
+        limit: 1,
+      }),
+      hiveClient.call('condenser_api.get_reward_fund', ['post']), // For estimating vote value
+    ]);
+    const [accountResult, followResult, globalResult, reputationResult, rewardFundResult] = results;
+
+    // Critical path: Check if account exists
+    if (accountResult.status === 'rejected' || !accountResult.value?.[0]) {
+      return null; // Account not found or network error
     }
 
-    // Use direct fetch implementation for reliable API calls
-    const apiNode = 'https://rpc.mahdiyari.info';
-    
-    // Get account data using proven working format
-    const accountPayload = {
-      jsonrpc: '2.0',
-      method: 'condenser_api.get_accounts',
-      params: [[username]],
-      id: 1
-    };
+    const account = accountResult.value[0];
 
-    const accountResponse = await fetch(apiNode, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(accountPayload)
-    });
+    // Extract data with robust fallbacks (WAX pattern)
+    const followCount =
+      followResult.status === 'fulfilled' && followResult.value
+        ? followResult.value
+        : { follower_count: 0, following_count: 0 };
 
-    if (!accountResponse.ok) {
-      throw new HiveError(`HTTP ${accountResponse.status}: ${accountResponse.statusText}`);
+    // Extract global properties with fallback
+    const globalProperties = globalResult.status === 'fulfilled' ? globalResult.value : null;
+
+    // Calculate reputation with proper fallback
+    let reputation = 25.0;
+    if (
+      reputationResult.status === 'fulfilled' &&
+      reputationResult.value?.reputations?.[0]?.name === username
+    ) {
+      const rawRep = Number(reputationResult.value.reputations[0].reputation);
+      reputation = parseFloat(calculateHiveReputation(rawRep));
     }
 
-    const accountData = await accountResponse.json();
-    
-    if (accountData.error) {
-      throw new HiveError(accountData.error.message);
+    // Compute estimated vote value (HIVE) based on reward fund
+    let voteValue = 0;
+    if (rewardFundResult.status === 'fulfilled' && rewardFundResult.value) {
+      const fund = rewardFundResult.value;
+      const rewardBalance = parseFloat((fund.reward_balance || '0').split(' ')[0]);
+      const recentClaims = parseFloat(fund.recent_claims || '0');
+      // Use manabar.current_mana (raw rshares) for full 100% vote
+      const rshares = account.voting_manabar?.current_mana || 0;
+      voteValue = recentClaims > 0 ? (rewardBalance * rshares) / recentClaims : 0;
     }
 
-    const account = accountData.result[0];
-    if (!account) {
-      return null; // Account not found
-    }
-
-    // Get follow count data
-    let followData = { follower_count: 0, following_count: 0 };
-    try {
-      const followPayload = {
-        jsonrpc: '2.0',
-        method: 'follow_api.get_follow_count',
-        params: [username],
-        id: 2
-      };
-
-      const followResponse = await fetch(apiNode, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(followPayload)
-      });
-
-      if (followResponse.ok) {
-        const followResult = await followResponse.json();
-        if (!followResult.error) {
-          followData = followResult.result;
-        }
-      }
-    } catch (error) {
-      // Follow API might not be available
-    }
-
-    // Get reputation using proper API method
-    let reputationScore = null;
-    try {
-      // Use the working condenser API method for reputation
-      const repPayload = {
-        jsonrpc: '2.0',
-        method: 'condenser_api.get_account_reputations',
-        params: [username, 1],
-        id: 4
-      };
-
-      const repResponse = await fetch(apiNode, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(repPayload)
-      });
-
-      if (repResponse.ok) {
-        const repResult = await repResponse.json();
-        if (!repResult.error && repResult.result && repResult.result.length > 0) {
-          const accountRep = repResult.result[0];
-          if (accountRep.account === username && accountRep.reputation) {
-            // Convert the raw reputation value to the display format
-            const rawRep = parseInt(accountRep.reputation);
-            if (rawRep !== 0) {
-              const isNegative = rawRep < 0;
-              const absRep = Math.abs(rawRep);
-              let score = Math.log10(absRep);
-              score = Math.max(score - 9, 0) * 9 + 25;
-              
-              if (isNegative) {
-                score = 50 - score;
-              }
-              
-              reputationScore = Math.max(0, score).toFixed(2);
-            }
-          }
-        }
-      }
-    } catch (error) {
-      // Reputation API not available, will use default
-    }
-    
-    // Get global properties for VESTS conversion
-    const globalPropsPayload = {
-      jsonrpc: '2.0',
-      method: 'condenser_api.get_dynamic_global_properties',
-      params: [],
-      id: 3
-    };
-
-    const globalPropsResponse = await fetch(apiNode, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(globalPropsPayload)
-    });
-
-    let globalProps = null;
-    if (globalPropsResponse.ok) {
-      const globalPropsData = await globalPropsResponse.json();
-      if (!globalPropsData.error) {
-        globalProps = globalPropsData.result;
-      }
-    }
-
-    // Transform account data to our AccountInfo interface
+    // Build optimized AccountInfo object
     const accountInfo: AccountInfo = {
       id: account.id || 0,
       name: account.name || username,
-      block_num: 0,
+      created: account.created || '',
+      json_metadata: account.json_metadata || '{}',
       last_vote_time: account.last_vote_time || '',
-      last_root_post: account.last_root_post || '',
-      last_post: account.last_post || '',
-      total_posts: account.post_count?.toString() || '0',
-      followers: followData.follower_count?.toString() || '0',
-      followings: followData.following_count?.toString() || '0',
-      reputation: reputationScore || parseReputation(account.reputation || '0'),
-      incoming_vests: account.received_vesting_shares || '0.000000 VESTS',
-      incoming_hp: convertVestsToHp(account.received_vesting_shares || '0.000000 VESTS', globalProps),
-      outgoing_vests: account.delegated_vesting_shares || '0.000000 VESTS',
-      outgoing_hp: convertVestsToHp(account.delegated_vesting_shares || '0.000000 VESTS', globalProps),
-      creator: account.creator || '',
-      created_at: account.created || '',
-      owner: account.owner || { key_auths: [], account_auths: [], weight_threshold: 1 },
-      active: account.active || { key_auths: [], account_auths: [], weight_threshold: 1 },
-      posting: account.posting || { key_auths: [], account_auths: [], weight_threshold: 1 },
-      memo_key: account.memo_key || '',
-      json_metadata: parseJsonSafely(account.json_metadata) || {},
-      posting_metadata: parseJsonSafely(account.posting_json_metadata) || { profile: {} },
-      last_update: account.last_account_update || '',
-      last_owner_update: account.last_owner_update || '',
-      recovery: account.recovery_account || '',
-      reward_hive_balance: account.reward_hive_balance || '0.000 HIVE',
-      reward_hbd_balance: account.reward_hbd_balance || '0.000 HBD',
-      reward_vests_balance: account.reward_vesting_balance || '0.000000 VESTS',
-      reward_vests_balance_hp: convertVestsToHp(account.reward_vesting_balance || '0.000000 VESTS', globalProps),
-      next_vesting_withdrawal: account.next_vesting_withdrawal || null,
-      to_withdraw: account.to_withdraw?.toString() || '0.000000 VESTS',
-      vesting_withdraw_rate: account.vesting_withdraw_rate || '0.000000 VESTS',
-      withdrawn: account.withdrawn?.toString() || '0.000000 VESTS',
-      withdraw_routes: account.withdraw_routes || null,
-      proxy: account.proxy || null,
-      pending_hive_savings_withdrawal: account.savings_withdraw_requests || null,
-      pending_hbd_savings_withdrawal: account.savings_hbd_withdraw_requests || null
+      reputation,
+      balance: account.balance || '0.000 HIVE',
+      hbd_balance: account.hbd_balance || '0.000 HBD',
+      vesting_shares: account.vesting_shares || '0.000000 VESTS',
+      delegated_vesting_shares: account.delegated_vesting_shares || '0.000000 VESTS',
+      received_vesting_shares: account.received_vesting_shares || '0.000000 VESTS',
+      voting_power: account.voting_power || 10000,
+      post_count: account.post_count || 0,
+      can_vote: account.can_vote !== false,
+      voting_manabar: account.voting_manabar || { current_mana: 0, last_update_time: 0 },
+      voting_mana_pct: parseFloat(((account.voting_power || 0) / 100).toFixed(2)),
+      vote_value: parseFloat(voteValue.toFixed(3)),
+      follow_count: followCount.follower_count || 0,
+      following_count: followCount.following_count || 0,
+      hive_power: parseFloat(
+        convertVestsToHp(account.vesting_shares || '0.000000 VESTS', globalProperties)
+      ),
     };
 
     return accountInfo;
-
-  } catch (error) {
-    if (error instanceof HiveError) {
-      throw error;
+  } catch (error: any) {
+    if (shouldCleanup) {
+      await hiveClient.shutdown();
     }
-    throw new HiveError(`Failed to get account info: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    throw new HiveError(`Failed to fetch account info: ${error.message}`);
   }
 }
 
 /**
- * Parse JSON safely, returning null if invalid
+ * Calculate readable Hive reputation from raw blockchain value
  */
-function parseJsonSafely(jsonString: string): any {
-  try {
-    return JSON.parse(jsonString || '{}');
-  } catch {
-    return {};
-  }
-}
-
-/**
- * Parse Hive reputation from raw value using correct Hive algorithm
- * Handles both raw blockchain values and formatted reputation scores
- */
-function parseReputation(rep: string | number): string {
-  if (rep === null || rep === undefined) return '25.00';
-  
-  let reputation = typeof rep === 'string' ? parseFloat(rep) : rep;
-  
-  // If reputation is already formatted (between 0-100), return as is
-  if (reputation > 0 && reputation <= 100) {
-    return reputation.toFixed(2);
-  }
-  
-  // Handle raw blockchain reputation values
-  if (reputation === 0) return '25.00';
-  
-  const isNegative = reputation < 0;
-  reputation = Math.abs(reputation);
-  
-  // Standard Hive reputation formula
-  let score = Math.log10(reputation);
-  score = Math.max(score - 9, 0) * 9 + 25;
-  
-  if (isNegative) {
-    score = 50 - score;
-  }
-  
-  return Math.max(0, score).toFixed(2);
-}
-
-/**
- * Format NAI asset object to traditional string format
- */
-function formatAssetAmount(asset: any, symbol?: string): string {
-  if (!asset) return `0.000${symbol ? ' ' + symbol : ' VESTS'}`;
-  
-  if (typeof asset === 'string') return asset;
-  
-  if (asset.amount && asset.precision !== undefined) {
-    const amount = parseFloat(asset.amount) / Math.pow(10, asset.precision);
-    
-    // Determine symbol from NAI
-    let assetSymbol = symbol;
-    if (!assetSymbol) {
-      switch (asset.nai) {
-        case '@@000000021': assetSymbol = 'HIVE'; break;
-        case '@@000000013': assetSymbol = 'HBD'; break;
-        case '@@000000037': assetSymbol = 'VESTS'; break;
-        default: assetSymbol = 'UNKNOWN';
-      }
-    }
-    
-    const precision = asset.precision;
-    return `${amount.toFixed(precision)} ${assetSymbol}`;
-  }
-  
-  return `0.000${symbol ? ' ' + symbol : ' VESTS'}`;
+function calculateHiveReputation(rawRep: number): string {
+  if (rawRep === 0) return '25.00';
+  const log = Math.log10(Math.abs(rawRep));
+  const out = Math.max(log - 9, 0) * 9 + 25;
+  return rawRep < 0 ? (50 - out).toFixed(2) : out.toFixed(2);
 }
 
 /**
@@ -285,32 +152,17 @@ function formatAssetAmount(asset: any, symbol?: string): string {
 function convertVestsToHp(vests: string, globalProps: any): string {
   try {
     const vestsAmount = parseFloat(vests.split(' ')[0] || '0');
-    if (vestsAmount === 0) return '0.000';
-    
-    // Handle both NAI format and traditional format for global properties
-    let totalVestingFund = 0;
-    let totalVestingShares = 1;
-    
-    if (globalProps.total_vesting_fund_hive?.amount) {
-      totalVestingFund = parseFloat(globalProps.total_vesting_fund_hive.amount) / Math.pow(10, globalProps.total_vesting_fund_hive.precision);
-    } else if (globalProps.total_vesting_fund_hive) {
-      totalVestingFund = parseFloat(globalProps.total_vesting_fund_hive.split(' ')[0] || '0');
+    if (!globalProps || !globalProps.total_vesting_fund_hive || !globalProps.total_vesting_shares) {
+      return '0.000';
     }
-    
-    if (globalProps.total_vesting_shares?.amount) {
-      totalVestingShares = parseFloat(globalProps.total_vesting_shares.amount) / Math.pow(10, globalProps.total_vesting_shares.precision);
-    } else if (globalProps.total_vesting_shares) {
-      totalVestingShares = parseFloat(globalProps.total_vesting_shares.split(' ')[0] || '1');
+    const fund = parseFloat(globalProps.total_vesting_fund_hive.split(' ')[0] || '0');
+    const totalVests = parseFloat(globalProps.total_vesting_shares.split(' ')[0] || '0');
+    if (totalVests === 0) {
+      return '0.000';
     }
-    
-    if (totalVestingShares === 0) return '0.000';
-    
-    const hp = (vestsAmount * totalVestingFund) / totalVestingShares;
+    const hp = (vestsAmount * fund) / totalVests;
     return hp.toFixed(3);
-  } catch (error) {
-    // Fallback calculation if global properties parsing fails
-    const vestsAmount = parseFloat(vests.split(' ')[0] || '0');
-    const hp = vestsAmount / 2000; // Approximate conversion
-    return hp.toFixed(3);
+  } catch {
+    return '0.000';
   }
 }

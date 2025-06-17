@@ -1,0 +1,51 @@
+# Source files (only publish built files)
+src/
+examples/
+tests/
+scripts/
+
+# Development configuration
+.eslintrc.js
+.prettierrc
+.prettierignore
+jest.config.js
+tsconfig*.json
+
+# Development files
+.env*
+.vscode/
+.idea/
+.replit
+
+# Testing and coverage
+coverage/
+*.test.ts
+*.spec.ts
+
+# Documentation source
+docs/
+
+# Build artifacts we don't need
+*.tsbuildinfo
+*.log
+
+# Development dependencies
+node_modules/
+
+# Git
+.git/
+.gitignore
+
+# CI/CD
+.github/
+
+# Temporary files
+tmp/
+temp/
+
+# Keep only essential files for npm package:
+# - dist/ (built files)
+# - README.md
+# - LICENSE
+# - package.json
+# - CHANGELOG.md (optional but useful)

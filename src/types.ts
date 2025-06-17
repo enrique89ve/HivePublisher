@@ -253,6 +253,12 @@ export interface PublishResult {
   error?: string;
   /** Additional error details */
   details?: string;
+  /** Updated content details (for edit operations) */
+  updated_content?: {
+    title: string;
+    body: string;
+    tags: string[];
+  };
 }
 
 /**
@@ -337,6 +343,8 @@ export interface HiveAccount {
   /** Whether account can vote */
   can_vote: boolean;
   /** Voting mana percentage */
+  voting_mana_pct: number;
+  /** Voting mana bar */
   voting_manabar: {
     current_mana: number;
     last_update_time: number;
@@ -370,6 +378,8 @@ export interface HiveContent {
   body: string;
   /** JSON metadata */
   json_metadata: string;
+  /** Posting metadata (raw from blockchain) */
+  posting_metadata?: string;
   /** Creation timestamp */
   created: string;
   /** Last update timestamp */
@@ -567,6 +577,10 @@ export interface AccountInfo {
     current_mana: number;
     last_update_time: number;
   };
+  /** Voting mana percentage (0-100) */
+  voting_mana_pct: number;
+  /** Estimated value of a 100% vote in HIVE */
+  vote_value?: number;
   /** Follow count */
   follow_count?: number;
   /** Following count */
@@ -591,6 +605,8 @@ export interface PostContent {
   body: string;
   /** JSON metadata */
   json_metadata: string;
+  /** Posting metadata (raw from blockchain) */
+  posting_metadata?: string;
   /** Creation timestamp */
   created: string;
   /** Last update timestamp */
@@ -682,6 +698,64 @@ export interface CommentData {
     percent: number;
     time: string;
   }>;
+}
+
+/**
+ * Options for updating an existing post with automatic content merging
+ * @example
+ * ```typescript
+ * const updates: PostUpdateOptions = {
+ *   title: 'Updated Title',
+ *   prependToBody: 'UPDATE: New information...\n\n',
+ *   appendToBody: '\n\nEDIT: Added more details.',
+ *   tags: ['updated', 'revised']
+ * };
+ * ```
+ */
+/**
+ * Edit modes for post updates
+ */
+export type EditMode = 'prepend' | 'append' | 'replace';
+
+/**
+ * Options for updating an existing post with automatic content fetching
+ * @example
+ * ```typescript
+ * // Add content to the end (default mode)
+ * const update: PostUpdateOptions = {
+ *   newContent: '\n\n**EDIT**: Added more details.',
+ *   mode: 'append' // optional, this is default
+ * };
+ *
+ * // Add content to the beginning
+ * const update: PostUpdateOptions = {
+ *   newContent: 'UPDATE: New information added...\n\n',
+ *   mode: 'prepend'
+ * };
+ *
+ * // Replace entire content
+ * const update: PostUpdateOptions = {
+ *   title: 'New Title',
+ *   newContent: 'Completely new content...',
+ *   mode: 'replace'
+ * };
+ * ```
+ */
+export interface PostUpdateOptions {
+  /** New content to add/replace (required) */
+  newContent: string;
+  /** Edit mode: where to place the new content @default 'append' */
+  mode?: EditMode;
+  /** New title (optional - keeps existing if not provided) */
+  title?: string;
+  /** New tags (optional - keeps existing if not provided) */
+  tags?: string[];
+  /** Post description for SEO and previews (optional) */
+  description?: string;
+  /** Featured image URL for the post (optional) */
+  image?: string;
+  /** Custom JSON metadata for additional properties (optional) */
+  json_metadata?: Record<string, unknown>;
 }
 
 // ============================================================================
