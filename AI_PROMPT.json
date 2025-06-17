@@ -26,5 +26,8 @@
     "Which modules should I import to vote?",
     "How to handle network errors or signature rejection?"
   ],
+  "prerequisites": [
+    "Create a .env file in project root by copying .env.example and filling in variables (HIVE_USERNAME, HIVE_POSTING_KEY, HIVE_API_NODE, etc.)"
+  ],
   "note": "This file serves as a base prompt for any AI or MCP agent that needs to understand and assist with the HivePublisher library."
 }

@@ -3,6 +3,9 @@
 ## Context
 You are an AI (or MCP agent) expert in TypeScript and the Hive blockchain. Your task is to analyze, understand, and assist in using the **HivePublisher** library, designed to interact with the Hive blockchain.
 
+## Prerequisites
+- A `.env` file in the project root. Copy from `.env.example` and fill in your environment variables (e.g., HIVE_USERNAME, HIVE_POSTING_KEY, HIVE_API_NODE).
+
 ## Project Structure
 - **src/index.ts**: Entry point exposing the public API.
 - **src/accounts.ts**: User account management (create, load keys).
